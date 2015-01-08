@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<project name="Drupal Build" default="notify-security-updates" basedir="./">
+
+  <property file="${phing.dir}/build.properties" />
+
+  <taskdef name="drush" classname="DrushTask" classpath="${drush.classpath}" /> 
+
+  <!-- ============================================  -->
+  <!-- Target: notify-security-updates                          -->
+  <!-- ============================================  -->
+  <target name="notify-security-updates" description="notify admin of any available security updates" depends="get-security-updates, get-site-info">
+    
+    <if>
+      <istrue value="${get-security-updates.list}"/>
+      <then>
+        <property name="notify-security-updates.message" value="${get-security-updates.list}" />
+      </then>
+      <else>
+        <property name="notify-security-updates.message" value="No security updates required :)" />
+      </else>
+    </if>
+
+    <mail tolist="${notify-security-updates.email}" from="${get-site-info.sitename}@${get-host.hostname}" subject="Drupal security updates">${get-site-info.sitename}@${host.name}${line.separator}${line.separator}${notify-security-updates.message}</mail>    
+    
+  </target>
+
+  <!-- ============================================  -->
+  <!-- Target: get-security-updates                  -->
+  <!-- ============================================  -->
+  <target name="get-security-updates" description="Check project for available Drupal security updates">
+    
+    <phingcall target="enable-module-update" />
+
+    <drush command="ups" root="${drupal.root}" returnProperty="get-security-updates.list">
+      <option name="pipe">1</option>
+      <option name="format">table</option>
+      <option name="security-only">1</option>
+    </drush>
+
+    <phingcall target="disable-module-update" />
+
+  </target>
+    
+  <!-- ============================================  -->
+  <!-- Target: get-site                              -->
+  <!-- ============================================  -->
+  <target name="get-site-info" description="Return the current drupal sitename">
+    
+    <drush command="vget" root="${drupal.root}" returnProperty="get-site-info.sitename">
+      <option name="format">string</option>
+      <param>site_name</param>
+    </drush>
+    
+  </target>
+
+  <!-- ============================================  -->
+  <!-- Target: enable-module-update                  -->
+  <!-- ============================================  -->
+  <target name="enable-module-update" description="Enable update module">
+    
+    <drush command="en" root="${drupal.root}" assume="yes">
+      <param>update</param>
+    </drush>
+    
+  </target>
+
+  <!-- ============================================  -->
+  <!-- Target: disable-module-update                  -->
+  <!-- ============================================  -->
+  <target name="disable-module-update" description="Disable update module">
+    
+    <drush command="dis" root="${drupal.root}" assume="yes">      
+      <param>update</param>
+    </drush>
+    
+  </target>
+
+</project>
