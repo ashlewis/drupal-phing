@@ -2,21 +2,21 @@
 phing script to perform drupal build tasks
 
 ## requirements
-phing
-drush
-phing drush task
+1. phing
+1. drush
+1. phing drush task
 
 ## install
-cd your/project/root
-mkdir phing
-cd phing 
-git clone <repo> .
-cp default.build.properties build.properties
-// update build.properties with required config
+1. cd your/project/root
+1. mkdir phing
+1. cd phing 
+1. git clone <repo> .
+1. cp default.build.properties build.properties
+1. // update build.properties with required config
 
 ## usage
-cd your/project/root/phing
-phing
+1. cd your/project/root/phing
+1. phing
 
 
 
