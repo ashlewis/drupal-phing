@@ -11,7 +11,7 @@ phing script to perform drupal build tasks
 1. mkdir phing
 1. cd phing 
 1. git clone <repo> .
-1. cp default.build.properties build.properties
+1. cp build.properties.defaul your/project/root/build.properties
 1. // update build.properties with required config
 
 ## usage
