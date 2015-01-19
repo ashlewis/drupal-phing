@@ -6,3 +6,18 @@ drupal.root = "../httpdocs"
 
 # email address to sent notification emails to
 notify-security-updates.email = you@example.com
+
+# db details
+db.driver = mysql
+db.host = localhost
+db.name = example
+db.user = user
+db.password = password
+db.root-user = root
+db.root-password = password
+
+project.root = /var/www/example
+project.url = example.dev
+
+vhost.dir = /etc/apache2/sites-available
+os.flavour = ubuntu|centos

@@ -1,19 +1,24 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <project name="Drupal Build" default="notify-security-updates" basedir="./">
-  
+
   <!-- ============================================  -->
-  <!-- Target: init                                  -->
+  <!-- Target: setup                                 -->
   <!-- ============================================  -->
-  <target name="-init" description="initialise build properties">
+  <target name="setup" description="setup build">
 
-    <!-- <input propertyname="env" validargs="dev,stage,prod">
-      Enter environment
-    </input> -->
+    <echo msg="Copying properties file..." />
+    <copy file="${phing.dir}/build.properties.default" tofile="${phing.dir}/../build.properties" />
 
-    <property file="${phing.dir}/../build.properties" />
+  </target>
 
-    <taskdef name="drush" classname="DrushTask" classpath="${drush.classpath}" />
+  <!-- ============================================ -->
+  <!-- Target: init-database                        -->
+  <!-- ============================================ -->
+  <target name="init-database" description="create empty db schema and user" depends="-init">
+
+      <phingcall target="-create-database" />
+      <phingcall target="-create-database-user" />
 
   </target>
 
@@ -36,6 +41,128 @@
     
   </target>
 
+  <!-- ============================================ -->
+  <!-- Target: add    vhost                         -->
+  <!-- ============================================ -->  
+  <target name="add-vhost" description="add vhost new site">
+
+    <phingcall target="-create-vhost-file" />
+    <phingcall target="-restart-webserver" />
+
+  </target>
+  
+  <!-- ============================================ -->
+  <!-- Target: create vhost fil                     -->
+  <!-- ============================================ --> 
+  <target name="-create-vhost-file" description="create vhost file for new site" depends="-init, -sudo-test">
+
+    <!-- write vhosts file with the information -->
+    <copy file="${phing.dir}/build.vhost.conf" tofile="${vhost.dir}/${project.url}.config" overwrite="true">
+      <filterchain>            
+        <replaceregexp>
+          <regexp pattern="%project.root%" replace="${project.root}" ignoreCase="true" />
+          <regexp pattern="%drupal.root%" replace="${drupal.root}" ignoreCase="true" />
+          <regexp pattern="%project.url%" replace="${project.url}" ignoreCase="true" />
+        </replaceregexp>
+      </filterchain>
+    </copy>
+
+  </target>
+
+  <!-- ============================================  -->
+  <!-- Target: restart webserver                     -->
+  <!-- ============================================  -->
+  <target name="-restart-webserver" description="restart webserver" depends="-init, -sudo-test">
+     
+    <!-- todo use built in proerty  <echo msg="${host.os.version}" /> -->    
+    <if>
+      <equals arg1="${os.flavour}" arg2="ubuntu" />
+      <then>
+        <!-- <exec command="service apache2 restart" /> -->
+        <exec command="a2ensite ${project.url}.config" />
+        <exec command="apache2ctl -k restart" />
+      </then>
+    </if>
+
+    <if>
+      <equals arg1="${os.flavour}" arg2="centos" />
+      <then>
+        <exec command="service httpd graceful" />
+      </then>
+    </if>
+
+
+  </target>
+  
+  <!-- ============================================ -->
+  <!-- Target: sudo test                            -->
+  <!-- ============================================ -->
+  <target name="-sudo-test" description="determine if phing is being run using root">
+
+    <!-- Create the currentuser property -->
+    <exec command="whoami" outputProperty="-sudo-test.current-user" />
+ 
+    <!-- Set the 'issudo' property to be true if the user is root -->
+    <condition property="-sudo-test.is-sudo">
+      <equals arg1="${-sudo-test.current-user}" arg2="root" />
+    </condition>
+ 
+    <!-- Fail the build if the user is not root -->
+    <if>
+      <not>
+        <equals arg1="${-sudo-test.is-sudo}" arg2="true" />
+      </not>
+      <then>
+        <fail message="You must run this build as sudo!" />
+      </then>
+    </if>
+
+  </target>  
+
+  <!-- ============================================  -->
+  <!-- Target: init                                  -->
+  <!-- ============================================  -->
+  <target name="-init" description="initialise build properties">
+
+    <!-- <input propertyname="env" validargs="dev,stage,prod">
+      Enter environment
+    </input> -->
+
+    <property file="${phing.dir}/../build.properties" />
+
+    <taskdef name="drush" classname="DrushTask" classpath="${drush.classpath}" />
+
+  </target>
+
+  <!-- ============================================ -->
+  <!-- Target: create-database                      -->
+  <!-- ============================================ -->
+  <target name="-create-database" description="create empty db schema">
+
+      <pdosqlexec url="${db.driver}:host=${db.host};" encoding="utf8" userid="${db.root-user}" password="${db.root-password}" onerror="abort">
+
+          <!--DROP DATABASE IF EXISTS `${db.name}`;-->
+
+          CREATE DATABASE IF NOT EXISTS `${db.name}`;
+      </pdosqlexec>
+
+   </target>
+
+  <!-- ============================================ -->
+  <!-- Target: create-database-user                 -->
+  <!-- ============================================ -->
+  <target name="-create-database-user" description="create user for db schema">
+
+       <pdosqlexec url="${db.driver}:host=${db.host};" encoding="utf8" userid="${db.root-user}" password="${db.root-password}" onerror="abort">
+
+          GRANT ALL ON ${db.name}.* TO '${db.user}'@'${db.host}' IDENTIFIED BY '${db.password}';
+          GRANT RELOAD ON *.* TO '${db.user}'@'${db.host}';
+          FLUSH PRIVILEGES;
+
+       </pdosqlexec>
+
+  </target> 
+
   <!-- ============================================  -->
   <!-- Target: get-security-updates                  -->
   <!-- ============================================  -->
@@ -43,7 +170,7 @@
     
     <phingcall target="-enable-module-update" />
 
-    <drush command="ups" root="${drupal.root}" returnProperty="get-security-updates.list">
+    <drush command="ups" root="${project.root}/${drupal.root}" returnProperty="get-security-updates.list">
       <option name="pipe">1</option>
       <option name="format">table</option>
       <option name="security-only">1</option>
@@ -58,7 +185,7 @@
   <!-- ============================================  -->
   <target name="-get-site-info" description="Return the current drupal sitename">
     
-    <drush command="vget" root="${drupal.root}" returnProperty="get-site-info.sitename">
+    <drush command="vget" root="${project.root}/${drupal.root}" returnProperty="get-site-info.sitename">
       <option name="format">string</option>
       <param>site_name</param>
     </drush>
@@ -70,7 +197,7 @@
   <!-- ============================================  -->
   <target name="-enable-module-update" description="Enable update module">
     
-    <drush command="en" root="${drupal.root}" assume="yes">
+    <drush command="en" root="${project.root}/${drupal.root}" assume="yes">
       <param>update</param>
     </drush>
     
@@ -81,7 +208,7 @@
   <!-- ============================================  -->
   <target name="-disable-module-update" description="Disable update module">
     
-    <drush command="dis" root="${drupal.root}" assume="yes">      
+    <drush command="dis" root="${project.root}/${drupal.root}" assume="yes">      
       <param>update</param>
     </drush>
     
