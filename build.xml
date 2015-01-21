@@ -50,39 +50,53 @@
   </target>
 
   <!-- ============================================ -->
-  <!-- Target: add    vhost                         -->
+  <!-- Target: add vhost                            -->
   <!-- ============================================ -->  
-  <target name="add-vhost" description="add vhost new site">
+  <target name="add-vhost" description="add vhost new site" depends="-init, -test-sudo">
 
     <phingcall target="-create-vhost-file" />
     <phingcall target="-restart-webserver" />
+
+  </target>
+
+  <!-- ============================================ -->
+  <!-- Target: add drush aliases                    -->
+  <!-- ============================================ --> 
+  <target name="add-drush-aliases" description="add drush aliases for diff environments" depends="-init">    
+     
+    <fileset dir="${phing.dir}" id="add-drush-aliases.files">
+      <include name="drush/*.*" />          
+    </fileset>
+
+    <copy todir="${project.root}/${drupal.root}/sites/all/" overwrite="true">
+      <fileset refid="add-drush-aliases.files" />
+      <filterchain>
+        <expandproperties/>
+      </filterchain>
+    </copy>    
 
   </target>
   
   <!-- ============================================ -->
   <!-- Target: create vhost file                    -->
   <!-- ============================================ --> 
-  <target name="-create-vhost-file" description="create vhost file for new site" depends="-init, -test-sudo" hidden="true">
+  <target name="-create-vhost-file" description="create vhost file for new site" hidden="true">
 
     <!-- write vhosts file with the information -->
     <copy file="${phing.dir}/build.vhost.conf" tofile="${vhost.dir}/${project.url}.config" overwrite="true">
-      <filterchain>            
-        <replaceregexp>
-          <regexp pattern="%project.root%" replace="${project.root}" ignoreCase="true" />
-          <regexp pattern="%drupal.root%" replace="${drupal.root}" ignoreCase="true" />
-          <regexp pattern="%project.url%" replace="${project.url}" ignoreCase="true" />
-        </replaceregexp>
+      <filterchain>
+        <expandproperties/>
       </filterchain>
     </copy>
 
-  </target>
+  </target>  
 
   <!-- ============================================  -->
   <!-- Target: restart webserver                     -->
   <!-- ============================================  -->
-  <target name="-restart-webserver" description="restart webserver" depends="-init, -test-sudo" hidden="true">
+  <target name="-restart-webserver" description="restart webserver" hidden="true">
      
-    <!-- todo use built in proerty  <echo msg="${host.os.version}" /> -->    
+    <!-- todo use built in property  <echo msg="${host.os.version}" /> -->    
     <if>
       <equals arg1="${os.flavour}" arg2="ubuntu" />
       <then>
@@ -101,6 +115,8 @@
 
 
   </target>
+
+
   
   <!-- ============================================ -->
   <!-- Target: sudo test                            -->
