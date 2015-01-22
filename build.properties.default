@@ -1,8 +1,11 @@
+env.name = dev
+project.repo = https://repo.url
+
 # absolute path to phingdrushtask
 drush.classpath = absolute/path/to/for/example/.drush/phingdrushtask
 
 # drupal base path
-drupal.root = "../httpdocs"
+drupal.root = httpdocs
 
 # email address to sent notification emails to
 notify-security-updates.email = you@example.com
@@ -21,3 +24,15 @@ project.url = example.dev
 
 vhost.dir = /etc/apache2/sites-available
 os.flavour = ubuntu|centos
+
+# dev (NOTE this referes to a "remote" dev)
+project.root.dev = /var/www/vhosts/example.dev
+project.url.dev = example.dev
+project.host.dev = 123.456.789.100
+os.user.dev = root
+
+# staging
+project.root.staging = /var/www/vhosts/example.stage
+project.url.staging = example.dev
+project.host.staging = 123.456.789.101
+os.user.staging = root

@@ -78,6 +78,27 @@
   </target>
   
   <!-- ============================================ -->
+  <!-- Target: get project                    -->
+  <!-- ============================================ --> 
+  <target name="get-project" description="get source code for project" depends="-init"> 
+    <!-- <gitclone repository="${project.repo}" targetPath="${project.root}" /> -->
+   
+    <if>
+      <available file="${project.root}/.git" type="dir" />
+        <then>
+          <!-- TODO: pull current develop branch? -->
+        </then>
+        <else>
+          <echo msg="Cloning source repository..." />
+          <!-- TODO: fix "cannot clone into non-empty dir" --> 
+          <!-- <exec command="git clone ${project.repo} ." dir="${project.root}" passthru="true" checkreturn="true"/> -->
+          <exec command="git clone ${project.repo}" dir="${project.root}" passthru="true" checkreturn="true"/>
+        </else>
+    </if>
+
+  </target>
+  
+  <!-- ============================================ -->
   <!-- Target: create vhost file                    -->
   <!-- ============================================ --> 
   <target name="-create-vhost-file" description="create vhost file for new site" hidden="true">
