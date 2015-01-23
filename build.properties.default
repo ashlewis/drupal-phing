@@ -1,29 +1,10 @@
-env.name = dev
+# GLOBAL
+# ---------------------------------------------
 project.repo = https://repo.url
-
-# absolute path to phingdrushtask
-drush.classpath = absolute/path/to/for/example/.drush/phingdrushtask
-
-# drupal base path
-drupal.root = httpdocs
 
 # email address to sent notification emails to
 notify-security-updates.email = you@example.com
 
-# db details
-db.driver = mysql
-db.host = localhost
-db.name = example
-db.user = user
-db.password = password
-db.root-user = root
-db.root-password = password
-
-project.root = /var/www/example
-project.url = example.dev
-
-vhost.dir = /etc/apache2/sites-available
-os.flavour = ubuntu|centos
 
 # dev (NOTE this referes to a "remote" dev)
 project.root.dev = /var/www/vhosts/example.dev
@@ -36,3 +17,17 @@ project.root.staging = /var/www/vhosts/example.stage
 project.url.staging = example.dev
 project.host.staging = 123.456.789.101
 os.user.staging = root
+
+
+# DEFAULTS may be overridden in build.env.properties
+# -------------------------------------------------
+
+# db details
+db.driver = mysql
+db.host = localhost
+
+vhost.dir = /etc/apache2/sites-available
+os.flavour = ubuntu|centos
+
+# drupal base path
+drupal.root = httpdocs

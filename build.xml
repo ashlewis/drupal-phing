@@ -15,10 +15,10 @@
   <!-- ============================================  -->
   <target name="install" description="onetime install tasks">
 
-    <echo msg="Copying properties file..." />
-    <copy file="${phing.dir}/build.properties.default" tofile="${phing.dir}/../build.properties" />
+    <phingcall target="-copy-default-global-properties" />
+    <phingcall target="-copy-default-env-properties" />
 
-  </target>
+  </target>  
 
   <!-- ============================================ -->
   <!-- Target: create-database                      -->
@@ -93,6 +93,41 @@
           <!-- TODO: fix "cannot clone into non-empty dir" --> 
           <!-- <exec command="git clone ${project.repo} ." dir="${project.root}" passthru="true" checkreturn="true"/> -->
           <exec command="git clone ${project.repo}" dir="${project.root}" passthru="true" checkreturn="true"/>
+        </else>
+    </if>
+
+  </target>
+
+  <!-- ============================================  -->
+  <!-- Target: copy-default-global-properties        -->
+  <!-- ============================================  -->
+  <target name="-copy-default-global-properties" description="copy default global properties file to project root for user to edit"  hidden="true">
+
+    <if>
+      <available file="${phing.dir}/../build.properties" type="file" />
+        <then>
+          <echo msg="Properties file already exists..." />
+        </then>
+        <else>
+          <echo msg="Copying properties file..." />
+          <copy file="${phing.dir}/build.properties.default" tofile="${phing.dir}/../build.properties" overwrite="false" />
+        </else>
+    </if>
+  </target>
+
+  <!-- ============================================  -->
+  <!-- Target: copy-default-env-properties           -->
+  <!-- ============================================  -->
+  <target name="-copy-default-env-properties" description="copy default environment specific properties file to project root for user to edit"  hidden="true">
+
+    <if>
+      <available file="${phing.dir}/../build.env.properties" type="file" />
+        <then>
+          <echo msg="Env properties file already exists..." />
+        </then>
+        <else>
+          <echo msg="Copying env properties file..." />
+          <copy file="${phing.dir}/build.env.properties.default" tofile="${phing.dir}/../build.env.properties" overwrite="false" />
         </else>
     </if>
 
@@ -173,8 +208,8 @@
       Enter environment
     </input> -->
 
-    <property file="${phing.dir}/../build.properties" />
-
+    <property file="${phing.dir}/../build.properties" override="true" />
+    <property file="${phing.dir}/../build.env.properties" override="true" />
     <taskdef name="drush" classname="DrushTask" classpath="${drush.classpath}" />
 
   </target>
