@@ -2,6 +2,9 @@
 
 <project name="Drupal Build" default="default" basedir="./">
 
+  <!-- ============================================  -->
+  <!-- Target: default                               -->
+  <!-- ============================================  -->
   <target name="default" description="The default target used when no arguments have been given">
 
     <exec command="phing -f ${phing.file} -l" outputProperty="default.phing-targets" />
@@ -73,7 +76,10 @@
       <filterchain>
         <expandproperties/>
       </filterchain>
-    </copy>    
+    </copy>
+    
+    <!-- @todo: move this? -->
+    <exec command="mkdir -p private/drush_dump" dir="${project.root}" passthru="true" checkreturn="true"/>
 
   </target>
   
@@ -81,20 +87,112 @@
   <!-- Target: get project                    -->
   <!-- ============================================ --> 
   <target name="get-project" description="get source code for project" depends="-init"> 
-    <!-- <gitclone repository="${project.repo}" targetPath="${project.root}" /> -->
    
     <if>
-      <available file="${project.root}/.git" type="dir" />
-        <then>
-          <!-- TODO: pull current develop branch? -->
-        </then>
-        <else>
-          <echo msg="Cloning source repository..." />
-          <!-- TODO: fix "cannot clone into non-empty dir" --> 
-          <!-- <exec command="git clone ${project.repo} ." dir="${project.root}" passthru="true" checkreturn="true"/> -->
-          <exec command="git clone ${project.repo}" dir="${project.root}" passthru="true" checkreturn="true"/>
-        </else>
+      <not>
+        <available file="${project.root}/.git" type="dir" />        
+      </not>
+      <then>
+        <phingcall target="-clone-project" />
+        <phingcall target="-move-project" />
+      </then>
     </if>
+
+    <phingcall target="-get-develop-branch" />
+
+  </target>
+
+  <!-- ============================================ -->
+  <!-- Target: install drupal                       -->
+  <!-- ============================================ --> 
+  <target name="install-drupal" description="perform drupal install (create db and settings.php file)" depends="-init"> 
+   
+    <drush command="site-install" root="${project.root}/${drupal.root}" assume="yes">
+      <param>standard</param>
+      <option name="db-url">${db.driver}://${db.user}:${db.password}@${db.host}:3306/${db.name}</option>
+      <option name="site-name">"${project.name}"</option>
+      <!--<option name="sites-subdir">"${project.name}"</option>-->
+      <option name="db-su">${db.root-user}</option>
+      <option name="db-su-pw">${db.root-password}</option>
+      <option name="account-name">${drupal.username}</option>
+      <option name="account-pass">${drupal.password}</option>      
+    </drush>
+
+  </target>
+  
+  <!-- ============================================ -->
+  <!-- Target: sync-db                              -->
+  <!-- ============================================ --> 
+  <target name="sync-db" description="pull latest db from (remote) dev - create db" depends="-init">
+    
+    <!-- @todo:
+    NOW=`date +%Y-%m-%d-%H-%M-%S` 
+
+    echo "backing up db..."
+    drush sql-dump --result-file=../${config_privateDir}/drush.dump.$NOW.sql --structure-tables-key=common
+   -->
+   
+    <drush command="sql-sync" root="${project.root}/${drupal.root}" assume="yes">
+      <param>@dev</param>
+      <param>@${env.name}</param>      
+      <option name="no-cache">1</option>
+      <option name="create-db">1</option>
+      <option name="db-su">${db.root-user}</option>
+      <option name="db-su-pw">${db.root-password}</option>
+      <option name="structure-tables-key">common</option>
+      <option name="sanitize ">1</option>    
+    </drush>
+
+    <!-- @todo:
+    echo "sync'ing files..."
+    drush -y rsync @${config_drupal_siteName}.$SOURCE:%files @${config_drupal_siteName}.$DEST:%files
+
+    echo "sync'ing private upload files..."
+    drush -y rsync @${config_drupal_siteName}.$SOURCE:%private-uploads @${config_drupal_siteName}.$DEST:%private-uploads
+
+    echo "setting admin password..."
+    drush upwd ${config_drupal_accountName} --password=${config_env_dbPassword}
+
+    echo "clearing cache..."
+    drush cc all
+  -->
+
+  </target>
+
+  <!-- ============================================ -->
+  <!-- Target: clone-project                        -->
+  <!-- ============================================ --> 
+  <target name="-clone-project" description="clone repo to temp dir to get around non-empty directory errors" hidden="true">    
+  
+    <echo msg="Cloning source repository..." />
+    <exec command="git clone ${project.repo} build_clone-project_tmp" dir="${project.root}" passthru="true" checkreturn="true"/>
+
+  </target>
+
+  <!-- ============================================ -->
+  <!-- Target: move-project                         -->
+  <!-- ============================================ --> 
+  <target name="-move-project" description="moved cloned project into project root"  hidden="true">  
+
+    <fileset dir="${project.root}/build_clone-project_tmp" id="move-project.files" defaultexcludes="false">
+      <include name="**/*" />   
+    </fileset>
+
+    <copy todir="${project.root}" overwrite="true">
+      <fileset refid="move-project.files" />
+    </copy>
+
+    <delete dir="${project.root}/build_clone-project_tmp" />
+
+  </target>
+
+  <!-- ============================================ -->
+  <!-- Target: get-develop-branch                   -->
+  <!-- ============================================ --> 
+  <target name="-get-develop-branch" description="get latest develop branch" hidden="true">  
+
+    <exec command="git checkout develop" dir="${project.root}" passthru="true" checkreturn="true"/>
+    <exec command="git pull origin develop" dir="${project.root}" passthru="true" checkreturn="true"/>
 
   </target>
 

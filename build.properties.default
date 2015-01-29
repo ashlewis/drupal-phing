@@ -1,5 +1,6 @@
 # GLOBAL
 # ---------------------------------------------
+project.name = phing-test
 project.repo = https://repo.url
 
 # email address to sent notification emails to
@@ -31,3 +32,5 @@ os.flavour = ubuntu|centos
 
 # drupal base path
 drupal.root = httpdocs
+drupal.username = admin
+drupal.password = password

@@ -1,3 +1,5 @@
+<?php
+
 $aliases["${env.name}"] = array (
   'root' => '${project.root}/${drupal.root}/',
   'uri' => 'http://${project.url}',
