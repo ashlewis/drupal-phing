@@ -123,15 +123,45 @@
   <!-- ============================================ -->
   <!-- Target: sync-db                              -->
   <!-- ============================================ --> 
-  <target name="sync-db" description="pull latest db from (remote) dev - create db" depends="-init">
+  <target name="sync-down" description="pull latest db and files from (remote) dev to local - create db" depends="-init">
+    
+    <phingcall target="-dump-db-local" />
+    
+    <phingcall target="-sync-down-db" />   
+    
+    <phingcall target="-sync-down-files" />
+
+    <phingcall target="-clear-drupal-cache" />   
+    
+    <phingcall target="-update-drupal-password" /> 
     
     <!-- @todo:
-    NOW=`date +%Y-%m-%d-%H-%M-%S` 
+    echo "sync'ing private upload files..."
+    drush -y rsync @${config_drupal_siteName}.$SOURCE:%private-uploads @${config_drupal_siteName}.$DEST:%private-uploads
+    -->
 
-    echo "backing up db..."
-    drush sql-dump --result-file=../${config_privateDir}/drush.dump.$NOW.sql --structure-tables-key=common
-   -->
-   
+  </target>
+
+  <!-- ============================================ -->
+  <!-- Target: -dump-db-local                        -->
+  <!-- ============================================ --> 
+  <target name="-dump-db-local" description="dump copy of local db to timestamped file in private dir" hidden="true">    
+  
+    <!-- generate date/time variables (${DSTAMP} ${TSTAMP} ${TODAY}) -->
+    <tstamp />
+
+    <drush command="sql-dump" root="${project.root}/${drupal.root}" assume="yes">
+      <option name="result-file">${project.root}/${drupal.dir.private}/drush.dump.${DSTAMP}_${TSTAMP}.sql</option>
+      <option name="structure-tables-key">common</option>
+    </drush>
+
+  </target>
+
+  <!-- ============================================ -->
+  <!-- Target: -sync-down-db                        -->
+  <!-- ============================================ --> 
+  <target name="-sync-down-db" description="synchronise local db with that from (remote) dev" hidden="true">    
+  
     <drush command="sql-sync" root="${project.root}/${drupal.root}" assume="yes">
       <param>@dev</param>
       <param>@${env.name}</param>      
@@ -140,22 +170,43 @@
       <option name="db-su">${db.root-user}</option>
       <option name="db-su-pw">${db.root-password}</option>
       <option name="structure-tables-key">common</option>
-      <option name="sanitize ">1</option>    
+      <option name="sanitize">1</option>    
     </drush>
 
-    <!-- @todo:
-    echo "sync'ing files..."
-    drush -y rsync @${config_drupal_siteName}.$SOURCE:%files @${config_drupal_siteName}.$DEST:%files
+  </target>
 
-    echo "sync'ing private upload files..."
-    drush -y rsync @${config_drupal_siteName}.$SOURCE:%private-uploads @${config_drupal_siteName}.$DEST:%private-uploads
+  <!-- ============================================ -->
+  <!-- Target: -sync-down-files                        -->
+  <!-- ============================================ --> 
+  <target name="-sync-down-files" description="synchronise local files directory with that from (remote) dev" hidden="true">    
+  
+    <drush command="rsync" root="${project.root}/${drupal.root}" assume="yes">
+      <param>@dev:%files</param>
+      <param>@${env.name}:%files</param> 
+    </drush>
 
-    echo "setting admin password..."
-    drush upwd ${config_drupal_accountName} --password=${config_env_dbPassword}
+  </target>
 
-    echo "clearing cache..."
-    drush cc all
-  -->
+  <!-- ============================================ -->
+  <!-- Target: -clear-drupal-cache                  -->
+  <!-- ============================================ --> 
+  <target name="-clear-drupal-cache" description="clear drupal cache" hidden="true">    
+  
+    <drush command="cc" root="${project.root}/${drupal.root}" assume="yes">
+      <param>all</param>
+    </drush>
+
+  </target>
+
+  <!-- ============================================ -->
+  <!-- Target: -drupal-update-password                 -->
+  <!-- ============================================ --> 
+  <target name="-update-drupal-password" description="update drupal password to that in properties file" hidden="true">    
+  
+     <drush command="upwd" root="${project.root}/${drupal.root}" assume="yes">
+      <param>${drupal.username}</param>
+      <option name="password">${drupal.password}</option>
+    </drush>
 
   </target>
 
@@ -237,7 +288,7 @@
   <target name="-create-vhost-file" description="create vhost file for new site" hidden="true">
 
     <!-- write vhosts file with the information -->
-    <copy file="${phing.dir}/build.vhost.conf" tofile="${vhost.dir}/${project.url}.config" overwrite="true">
+    <copy file="${phing.dir}/build.vhost.conf" tofile="${vhost.dir}/${project.url}.conf" overwrite="true">
       <filterchain>
         <expandproperties/>
       </filterchain>
@@ -255,7 +306,7 @@
       <equals arg1="${os.flavour}" arg2="ubuntu" />
       <then>
         <!-- <exec command="service apache2 restart" /> -->
-        <exec command="a2ensite ${project.url}.config" />
+        <exec command="a2ensite ${project.url}.conf" />
         <exec command="apache2ctl -k restart" />
       </then>
     </if>

@@ -32,5 +32,6 @@ os.flavour = ubuntu|centos
 
 # drupal base path
 drupal.root = httpdocs
+drupal.dir.private = private
 drupal.username = admin
 drupal.password = password
