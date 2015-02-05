@@ -71,7 +71,7 @@
       <include name="drush/*.*" />          
     </fileset>
 
-    <copy todir="${project.root}/${drupal.root}/sites/all/" overwrite="true">
+    <copy todir="${project.root}/${drupal.dir.root}/sites/all/" overwrite="true">
       <fileset refid="add-drush-aliases.files" />
       <filterchain>
         <expandproperties/>
@@ -79,7 +79,7 @@
     </copy>
     
     <!-- @todo: move this? -->
-    <exec command="mkdir -p private/drush_dump" dir="${project.root}" passthru="true" checkreturn="true"/>
+    <exec command="mkdir -p ${drupal.dir.private}/drush_dump" dir="${project.root}" passthru="true" checkreturn="true"/>
 
   </target>
   
@@ -107,7 +107,7 @@
   <!-- ============================================ --> 
   <target name="install-drupal" description="perform drupal install (create db and settings.php file)" depends="-init"> 
    
-    <drush command="site-install" root="${project.root}/${drupal.root}" assume="yes">
+    <drush command="site-install" root="${project.root}/${drupal.dir.root}" assume="yes">
       <param>standard</param>
       <option name="db-url">${db.driver}://${db.user}:${db.password}@${db.host}:3306/${db.name}</option>
       <option name="site-name">"${project.name}"</option>
@@ -143,6 +143,14 @@
   </target>
 
   <!-- ============================================ -->
+  <!-- Target: fix-file-permissions                              -->
+  <!-- ============================================ --> 
+  <target name="fix-file-permissions" description="run fix file permissions script for a secure drupal setup" depends="-init, -test-sudo">
+    <exec command="bash /usr/local/bin/fix-permissions.sh --drupal_path=${project.root}/${drupal.dir.root} --drupal_user=${permissions.owner} --httpd_group=${permissions.group}" />
+  </target>
+
+
+  <!-- ============================================ -->
   <!-- Target: -dump-db-local                        -->
   <!-- ============================================ --> 
   <target name="-dump-db-local" description="dump copy of local db to timestamped file in private dir" hidden="true">    
@@ -150,7 +158,7 @@
     <!-- generate date/time variables (${DSTAMP} ${TSTAMP} ${TODAY}) -->
     <tstamp />
 
-    <drush command="sql-dump" root="${project.root}/${drupal.root}" assume="yes">
+    <drush command="sql-dump" root="${project.root}/${drupal.dir.root}" assume="yes">
       <option name="result-file">${project.root}/${drupal.dir.private}/drush.dump.${DSTAMP}_${TSTAMP}.sql</option>
       <option name="structure-tables-key">common</option>
     </drush>
@@ -162,7 +170,7 @@
   <!-- ============================================ --> 
   <target name="-sync-down-db" description="synchronise local db with that from (remote) dev" hidden="true">    
   
-    <drush command="sql-sync" root="${project.root}/${drupal.root}" assume="yes">
+    <drush command="sql-sync" root="${project.root}/${drupal.dir.root}" assume="yes">
       <param>@dev</param>
       <param>@${env.name}</param>      
       <option name="no-cache">1</option>
@@ -179,8 +187,18 @@
   <!-- Target: -sync-down-files                        -->
   <!-- ============================================ --> 
   <target name="-sync-down-files" description="synchronise local files directory with that from (remote) dev" hidden="true">    
-  
-    <drush command="rsync" root="${project.root}/${drupal.root}" assume="yes">
+    
+    <!-- @todo: move this? -->
+    <if>
+      <not>
+        <available file="${project.root}/${drupal.dir.root}/${drupal.dir.files}" type="dir" />        
+      </not>
+      <then>
+        <exec command="mkdir -p ${drupal.dir.files}" dir="${project.root}/${drupal.dir.root}" passthru="true" checkreturn="true"/>
+      </then>
+    </if>
+
+    <drush command="rsync" root="${project.root}/${drupal.dir.root}" assume="yes">
       <param>@dev:%files</param>
       <param>@${env.name}:%files</param> 
     </drush>
@@ -192,7 +210,7 @@
   <!-- ============================================ --> 
   <target name="-clear-drupal-cache" description="clear drupal cache" hidden="true">    
   
-    <drush command="cc" root="${project.root}/${drupal.root}" assume="yes">
+    <drush command="cc" root="${project.root}/${drupal.dir.root}" assume="yes">
       <param>all</param>
     </drush>
 
@@ -203,7 +221,7 @@
   <!-- ============================================ --> 
   <target name="-update-drupal-password" description="update drupal password to that in properties file" hidden="true">    
   
-     <drush command="upwd" root="${project.root}/${drupal.root}" assume="yes">
+     <drush command="upwd" root="${project.root}/${drupal.dir.root}" assume="yes">
       <param>${drupal.username}</param>
       <option name="password">${drupal.password}</option>
     </drush>
@@ -399,7 +417,7 @@
     
     <phingcall target="-enable-module-update" />
 
-    <drush command="ups" root="${project.root}/${drupal.root}" returnProperty="get-security-updates.list">
+    <drush command="ups" root="${project.root}/${drupal.dir.root}" returnProperty="get-security-updates.list">
       <option name="pipe">1</option>
       <option name="format">table</option>
       <option name="security-only">1</option>
@@ -414,7 +432,7 @@
   <!-- ============================================  -->
   <target name="-get-site-info" description="Return the current drupal sitename" hidden="true">
     
-    <drush command="vget" root="${project.root}/${drupal.root}" returnProperty="get-site-info.sitename" >
+    <drush command="vget" root="${project.root}/${drupal.dir.root}" returnProperty="get-site-info.sitename" >
       <option name="format">string</option>
       <param>site_name</param>
     </drush>
@@ -426,7 +444,7 @@
   <!-- ============================================  -->
   <target name="-enable-module-update" description="Enable update module" hidden="true">
     
-    <drush command="en" root="${project.root}/${drupal.root}" assume="yes">
+    <drush command="en" root="${project.root}/${drupal.dir.root}" assume="yes">
       <param>update</param>
     </drush>
     
@@ -437,7 +455,7 @@
   <!-- ============================================  -->
   <target name="-disable-module-update" description="Disable update module" hidden="true">
     
-    <drush command="dis" root="${project.root}/${drupal.root}" assume="yes">      
+    <drush command="dis" root="${project.root}/${drupal.dir.root}" assume="yes">      
       <param>update</param>
     </drush>
     

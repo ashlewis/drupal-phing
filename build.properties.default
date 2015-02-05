@@ -29,9 +29,12 @@ db.host = localhost
 
 vhost.dir = /etc/apache2/sites-available
 os.flavour = ubuntu|centos
+permissions.owner = root
+permissions.group = apache
 
 # drupal base path
-drupal.root = httpdocs
+drupal.dir.root = httpdocs
+drupal.dir.files = sites/default/files
 drupal.dir.private = private
 drupal.username = admin
 drupal.password = password
