@@ -151,7 +151,7 @@
   <!-- ============================================ -->
   <!-- Target: sync-db                              -->
   <!-- ============================================ --> 
-  <target name="sync-down" description="pull latest db and files from (remote) dev to local - create db" depends="-init">
+  <target name="sync-down" description="pull latest db and files from (remote) dev to local" depends="-init">
     
     <phingcall target="-dump-db-local" />
     
