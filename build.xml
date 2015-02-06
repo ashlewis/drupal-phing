@@ -25,13 +25,13 @@
 
   <!-- ============================================ -->
   <!-- Target: create-database                      -->
-  <!-- ============================================ -->
+  <!-- ============================================ 
   <target name="create-database" description="create empty db schema and user" depends="-init">
 
       <phingcall target="-create-database-schema" />
       <phingcall target="-create-database-user" />
 
-  </target>
+  </target>-->
 
   <!-- ============================================  -->
   <!-- Target: notify-security-updates               -->
@@ -53,9 +53,37 @@
   </target>
 
   <!-- ============================================ -->
+  <!-- Target: build                                -->
+  <!-- ============================================ -->
+  <target name="build" description="build tasks for a new local copy of an existing site" depends="-init">
+
+      <phingcall target="-add-drush-aliases" />
+      <phingcall target="-install-drupal" />
+      <phingcall target="sync-down" />
+
+  </target>
+
+  <!-- ============================================ -->
+  <!-- Target: sudo-build                                -->
+  <!-- ============================================ -->
+  <target name="sudo-build" description="build tasks for a new local copy of an existing site that must be run as sudo (use sudo phing sudo-build)" depends="-init, -test-sudo">
+
+      <phingcall target="-add-vhost" />
+      <phingcall target="-fix-file-permissions" /> 
+
+  </target>
+
+  <!-- ============================================ -->
+  <!-- Target: build                                -->
+  <!-- ============================================ -->
+  <target name="fix-file-permissions" description="run fix file permissions script for a secure drupal setup" depends="-init, -test-sudo">
+      <phingcall target="-fix-file-permissions" /> 
+  </target>
+
+  <!-- ============================================ -->
   <!-- Target: add vhost                            -->
   <!-- ============================================ -->  
-  <target name="add-vhost" description="add vhost new site" depends="-init, -test-sudo">
+  <target name="-add-vhost" description="add vhost new site" hidden="true">
 
     <phingcall target="-create-vhost-file" />
     <phingcall target="-restart-webserver" />
@@ -65,7 +93,7 @@
   <!-- ============================================ -->
   <!-- Target: add drush aliases                    -->
   <!-- ============================================ --> 
-  <target name="add-drush-aliases" description="add drush aliases for diff environments" depends="-init">    
+  <target name="-add-drush-aliases" description="add drush aliases for diff environments" hidden="true">    
      
     <fileset dir="${phing.dir}" id="add-drush-aliases.files">
       <include name="drush/*.*" />          
@@ -85,7 +113,7 @@
   
   <!-- ============================================ -->
   <!-- Target: get project                    -->
-  <!-- ============================================ --> 
+  <!-- ============================================ 
   <target name="get-project" description="get source code for project" depends="-init"> 
    
     <if>
@@ -100,12 +128,12 @@
 
     <phingcall target="-get-develop-branch" />
 
-  </target>
+  </target>--> 
 
   <!-- ============================================ -->
   <!-- Target: install drupal                       -->
   <!-- ============================================ --> 
-  <target name="install-drupal" description="perform drupal install (create db and settings.php file)" depends="-init"> 
+  <target name="-install-drupal" description="perform drupal install (create db and settings.php file)" hidden="true"> 
    
     <drush command="site-install" root="${project.root}/${drupal.dir.root}" assume="yes">
       <param>standard</param>
@@ -133,7 +161,7 @@
 
     <phingcall target="-clear-drupal-cache" />   
     
-    <phingcall target="-update-drupal-password" /> 
+    <phingcall target="-update-drupal-password" />     
     
     <!-- @todo:
     echo "sync'ing private upload files..."
@@ -145,7 +173,7 @@
   <!-- ============================================ -->
   <!-- Target: fix-file-permissions                              -->
   <!-- ============================================ --> 
-  <target name="fix-file-permissions" description="run fix file permissions script for a secure drupal setup" depends="-init, -test-sudo">
+  <target name="-fix-file-permissions" description="run fix file permissions script for a secure drupal setup" hidden="true">
     <exec command="bash /usr/local/bin/fix-permissions.sh --drupal_path=${project.root}/${drupal.dir.root} --drupal_user=${permissions.owner} --httpd_group=${permissions.group}" />
   </target>
 
@@ -230,17 +258,17 @@
 
   <!-- ============================================ -->
   <!-- Target: clone-project                        -->
-  <!-- ============================================ --> 
+  <!-- ============================================
   <target name="-clone-project" description="clone repo to temp dir to get around non-empty directory errors" hidden="true">    
   
     <echo msg="Cloning source repository..." />
     <exec command="git clone ${project.repo} build_clone-project_tmp" dir="${project.root}" passthru="true" checkreturn="true"/>
 
-  </target>
+  </target> --> 
 
   <!-- ============================================ -->
   <!-- Target: move-project                         -->
-  <!-- ============================================ --> 
+  <!-- ============================================ 
   <target name="-move-project" description="moved cloned project into project root"  hidden="true">  
 
     <fileset dir="${project.root}/build_clone-project_tmp" id="move-project.files" defaultexcludes="false">
@@ -253,17 +281,17 @@
 
     <delete dir="${project.root}/build_clone-project_tmp" />
 
-  </target>
+  </target>--> 
 
   <!-- ============================================ -->
   <!-- Target: get-develop-branch                   -->
-  <!-- ============================================ --> 
+  <!-- ============================================ 
   <target name="-get-develop-branch" description="get latest develop branch" hidden="true">  
 
     <exec command="git checkout develop" dir="${project.root}" passthru="true" checkreturn="true"/>
     <exec command="git pull origin develop" dir="${project.root}" passthru="true" checkreturn="true"/>
 
-  </target>
+  </target>--> 
 
   <!-- ============================================  -->
   <!-- Target: copy-default-global-properties        -->
@@ -383,21 +411,20 @@
 
   <!-- ============================================ -->
   <!-- Target: create-database-schema                      -->
-  <!-- ============================================ -->
+  <!-- ============================================ 
   <target name="-create-database-schema" description="create empty db schema" hidden="true">
 
       <pdosqlexec url="${db.driver}:host=${db.host};" encoding="utf8" userid="${db.root-user}" password="${db.root-password}" onerror="abort">
 
-          <!--DROP DATABASE IF EXISTS `${db.name}`;-->
 
           CREATE DATABASE IF NOT EXISTS `${db.name}`;
       </pdosqlexec>
 
-   </target>
+   </target>-->
 
   <!-- ============================================ -->
   <!-- Target: create-database-user                 -->
-  <!-- ============================================ -->
+  <!-- ============================================ 
   <target name="-create-database-user" description="create user for db schema" hidden="true">
 
        <pdosqlexec url="${db.driver}:host=${db.host};" encoding="utf8" userid="${db.root-user}" password="${db.root-password}" onerror="abort">
@@ -408,7 +435,7 @@
 
        </pdosqlexec>
 
-  </target> 
+  </target> -->
 
   <!-- ============================================  -->
   <!-- Target: get-security-updates                  -->
