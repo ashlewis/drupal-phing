@@ -1,7 +1,7 @@
 # GLOBAL
 # ---------------------------------------------
 project.name = phing-test
-project.repo = https://repo.url
+#project.repo = https://repo.url
 
 # email address to sent notification emails to
 notify-security-updates.email = you@example.com
@@ -27,8 +27,8 @@ os.user.staging = root
 db.driver = mysql
 db.host = localhost
 
-vhost.dir = /etc/apache2/sites-available
-os.flavour = ubuntu|centos
+vhost.dir = /etc/httpd/vhost.d
+os.flavour = centos
 permissions.owner = root
 permissions.group = apache
 
