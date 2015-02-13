@@ -23,6 +23,44 @@
 
   </target>  
 
+  <!-- ============================================  -->
+  <!-- Target: install                               -->
+  <!-- ============================================  -->
+  <!-- @todo: refactor this so it gets run from notify-security-updates ? -->
+  <target name="multisite-notify-security-updates" description="multisite test" depends="-init, -get-sites">
+
+    <foreach param="site.name" absparam="drupal.site.path" target="notify-security-updates">
+      <fileset refid="-get-sites.directories" />
+    </foreach>
+
+  </target>
+
+  <!-- ============================================  -->
+  <!-- Target: install                               -->
+  <!-- ============================================  -->
+  <target name="-get-sites" description="get fileset of all (multisite) sites" hidden="true">
+    <fileset dir="${project.root}/${drupal.dir.root}/sites/" excludes="all,default" id="-get-sites.directories">
+      <type type="dir" />
+      <depth max="0" min="0" />
+    </fileset>
+  </target>
+
+  <!-- ============================================  -->
+  <!-- Target: install                               -->
+  <!-- ============================================  -->
+  <target name="-get-site-path" description="set site path for multisite or single site" hidden="true">
+
+    <if>
+      <not>
+        <isset property="drupal.site.path" />
+      </not>
+      <then>
+        <property name="drupal.site.path" value="${project.root}/${drupal.dir.root}" />
+      </then>
+    </if>
+
+  </target>
+
   <!-- ============================================ -->
   <!-- Target: create-database                      -->
   <!-- ============================================ 
@@ -36,8 +74,12 @@
   <!-- ============================================  -->
   <!-- Target: notify-security-updates               -->
   <!-- ============================================  -->
-  <target name="notify-security-updates" description="notify admin of any available security updates" depends="-init, -get-security-updates, -get-site-info">
+  <target name="notify-security-updates" description="notify admin of any available security updates" depends="-init, -get-site-path">
+   
     
+    <phingcall target="-get-security-updates" />
+    <phingcall target="-get-site-info" />
+
     <if>
       <istrue value="${get-security-updates.list}"/>
       <then>
@@ -465,7 +507,7 @@
     
     <phingcall target="-enable-module-update" />
 
-    <drush command="ups" root="${project.root}/${drupal.dir.root}" returnProperty="get-security-updates.list">
+    <drush command="ups" root="${drupal.site.path}" returnProperty="get-security-updates.list">
       <option name="pipe">1</option>
       <option name="format">table</option>
       <option name="security-only">1</option>
@@ -480,7 +522,7 @@
   <!-- ============================================  -->
   <target name="-get-site-info" description="Return the current drupal sitename" hidden="true">
     
-    <drush command="vget" root="${project.root}/${drupal.dir.root}" returnProperty="get-site-info.sitename" >
+    <drush command="vget" root="${drupal.site.path}" returnProperty="get-site-info.sitename">
       <option name="format">string</option>
       <param>site_name</param>
     </drush>
@@ -492,7 +534,7 @@
   <!-- ============================================  -->
   <target name="-enable-module-update" description="Enable update module" hidden="true">
     
-    <drush command="en" root="${project.root}/${drupal.dir.root}" assume="yes">
+    <drush command="en" root="${drupal.site.path}" assume="yes">
       <param>update</param>
     </drush>
     
@@ -503,7 +545,7 @@
   <!-- ============================================  -->
   <target name="-disable-module-update" description="Disable update module" hidden="true">
     
-    <drush command="dis" root="${project.root}/${drupal.dir.root}" assume="yes">      
+    <drush command="dis" root="${drupal.site.path}" assume="yes">      
       <param>update</param>
     </drush>
     
