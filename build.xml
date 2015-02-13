@@ -55,7 +55,17 @@
   <!-- ============================================ -->
   <!-- Target: build                                -->
   <!-- ============================================ -->
-  <target name="build" description="build tasks for a new local copy of an existing site" depends="-init">
+  <target name="build-new" description="build tasks for a new local copy of an existing site" depends="-init">
+
+      <phingcall target="-add-drush-aliases" />
+      <phingcall target="-install-drupal" />
+
+  </target>
+
+  <!-- ============================================ -->
+  <!-- Target: build                                -->
+  <!-- ============================================ -->
+  <target name="build-existing" description="build tasks for a new local copy of an existing site" depends="-init">
 
       <phingcall target="-add-drush-aliases" />
       <phingcall target="-install-drupal" />
@@ -70,6 +80,7 @@
 
       <phingcall target="-add-vhost" />
       <phingcall target="-fix-file-permissions" /> 
+      <!-- @todo: symlink ${env}.settings.php -> settings.php (need to be sudo due to drupal premissions) -->
 
   </target>
 
@@ -78,6 +89,15 @@
   <!-- ============================================ -->
   <target name="fix-file-permissions" description="run fix file permissions script for a secure drupal setup" depends="-init, -test-sudo">
       <phingcall target="-fix-file-permissions" /> 
+  </target>
+
+  <!-- ============================================ -->
+  <!-- Target: add-drush-aliases                                -->
+  <!-- ============================================ -->
+  <target name="add-drush-aliases" description="add drush aliases for diff environments" depends="-init">
+
+      <phingcall target="-add-drush-aliases" />
+
   </target>
 
   <!-- ============================================ -->
@@ -107,6 +127,7 @@
     </copy>
     
     <!-- @todo: move this? -->
+    <!-- @todo: fix permissions on private dir -->
     <exec command="mkdir -p ${drupal.dir.private}/drush_dump" dir="${project.root}" passthru="true" checkreturn="true"/>
 
   </target>
