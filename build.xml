@@ -26,12 +26,21 @@
   <!-- ============================================  -->
   <!-- Target: install                               -->
   <!-- ============================================  -->
-  <!-- @todo: refactor this so it gets run from notify-security-updates ? -->
-  <target name="multisite-notify-security-updates" description="multisite test" depends="-init, -get-sites">
+  <target name="notify-security-updates" description="notify admin of any available security updates" depends="-init">
+    
+    <phingcall target="-get-sites" />
 
-    <foreach param="site.name" absparam="drupal.site.path" target="notify-security-updates">
-      <fileset refid="-get-sites.directories" />
-    </foreach>
+    <if>
+      <referenceexists ref="-get-sites.directories" />
+      <then>
+        <foreach param="site.name" absparam="drupal.site.path" target="-notify-security-updates">
+          <fileset refid="-get-sites.directories" />
+        </foreach>
+      </then>
+      <else>
+        <phingcall target="-notify-security-updates" />
+      </else>
+    </if>
 
   </target>
 
@@ -74,7 +83,7 @@
   <!-- ============================================  -->
   <!-- Target: notify-security-updates               -->
   <!-- ============================================  -->
-  <target name="notify-security-updates" description="notify admin of any available security updates" depends="-init, -get-site-path">
+  <target name="-notify-security-updates" description="notify admin of any available security updates" depends="-get-site-path" hidden="true">
    
     
     <phingcall target="-get-security-updates" />
