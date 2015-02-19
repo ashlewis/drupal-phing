@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
+  <!-- ============================================  -->
+  <!-- @todo: get phing drush from repo on install(see drupal phing)   -->
+  <!-- ============================================  -->
+
 <project name="Drupal Build" default="default" basedir="./">
 
   <!-- ============================================  -->
@@ -24,7 +28,7 @@
   </target>  
 
   <!-- ============================================  -->
-  <!-- Target: install                               -->
+  <!-- Target: notify-security-updates               -->
   <!-- ============================================  -->
   <target name="notify-security-updates" description="notify admin of any available security updates" depends="-init">
     
@@ -45,7 +49,7 @@
   </target>
 
   <!-- ============================================  -->
-  <!-- Target: install                               -->
+  <!-- Target: -get-sites                            -->
   <!-- ============================================  -->
   <target name="-get-sites" description="get fileset of all (multisite) sites" hidden="true">
     <fileset dir="${project.root}/${drupal.dir.root}/sites/" excludes="all,default" id="-get-sites.directories">
@@ -55,7 +59,7 @@
   </target>
 
   <!-- ============================================  -->
-  <!-- Target: install                               -->
+  <!-- Target: -get-site-path                        -->
   <!-- ============================================  -->
   <target name="-get-site-path" description="set site path for multisite or single site" hidden="true">
 
@@ -69,16 +73,6 @@
     </if>
 
   </target>
-
-  <!-- ============================================ -->
-  <!-- Target: create-database                      -->
-  <!-- ============================================ 
-  <target name="create-database" description="create empty db schema and user" depends="-init">
-
-      <phingcall target="-create-database-schema" />
-      <phingcall target="-create-database-user" />
-
-  </target>-->
 
   <!-- ============================================  -->
   <!-- Target: notify-security-updates               -->
@@ -104,7 +98,7 @@
   </target>
 
   <!-- ============================================ -->
-  <!-- Target: build                                -->
+  <!-- Target: build-new                            -->
   <!-- ============================================ -->
   <target name="build-new" description="build tasks for a new local copy of an existing site" depends="-init">
 
@@ -114,7 +108,7 @@
   </target>
 
   <!-- ============================================ -->
-  <!-- Target: build                                -->
+  <!-- Target: build-existing                       -->
   <!-- ============================================ -->
   <target name="build-existing" description="build tasks for a new local copy of an existing site" depends="-init">
 
@@ -125,7 +119,7 @@
   </target>
 
   <!-- ============================================ -->
-  <!-- Target: sudo-build                                -->
+  <!-- Target: sudo-build                           -->
   <!-- ============================================ -->
   <target name="sudo-build" description="build tasks for a new local copy of an existing site that must be run as sudo (use sudo phing sudo-build)" depends="-init, -test-sudo">
 
@@ -136,14 +130,14 @@
   </target>
 
   <!-- ============================================ -->
-  <!-- Target: build                                -->
+  <!-- Target: fix-file-permissions                 -->
   <!-- ============================================ -->
   <target name="fix-file-permissions" description="run fix file permissions script for a secure drupal setup" depends="-init, -test-sudo">
       <phingcall target="-fix-file-permissions" /> 
   </target>
 
   <!-- ============================================ -->
-  <!-- Target: add-drush-aliases                                -->
+  <!-- Target: add-drush-aliases                    -->
   <!-- ============================================ -->
   <target name="add-drush-aliases" description="add drush aliases for diff environments" depends="-init">
 
@@ -412,16 +406,52 @@
       </filterchain>
     </copy>
 
-  </target>  
+  </target>
+
+  <!-- ============================================  -->
+  <!-- Target: os-is-ubuntu                          -->
+  <!-- ============================================  -->
+  <target name="-os-is-ubuntu" description="check if current os is ubuntu" hidden="true">
+    
+    <if>
+      <contains string="${host.os.version}" substring="ubuntu" casesensitive="false" />
+      <then>
+        <property name="-os-is-ubuntu.flag" value="true" />
+      </then>
+      <else>
+        <property name="-os-is-ubuntu.flag" value="false" />
+      </else>     
+    </if>
+  </target>
+
+  <!-- ============================================  -->
+  <!-- Target: os-is-centos                          -->
+  <!-- ============================================  -->
+  <target name="-os-is-centos" description="check if current os is centos" hidden="true">
+    <if>
+      <contains string="${host.os.version}" substring="centos" casesensitive="false" />
+      <then>
+        <property name="-os-is-centos.flag" value="true" />
+      </then>
+      <else>
+        <property name="-os-is-centos.flag" value="false" />
+      </else>
+    </if>
+  </target>
+
+  <!-- ============================================  -->
+  <!-- Target: get-os                                -->
+  <!-- ============================================  -->
+  <target name="-get-os" description="get current os" depends="-os-is-centos, -os-is-ubuntu" hidden="true">
+  </target>
 
   <!-- ============================================  -->
   <!-- Target: restart webserver                     -->
   <!-- ============================================  -->
-  <target name="-restart-webserver" description="restart webserver" hidden="true">
-     
-    <!-- todo use built in property  <echo msg="${host.os.version}" /> -->    
+  <target name="restart-webserver" description="restart webserver" depends="-get-os" hidden="true">     
+
     <if>
-      <equals arg1="${os.flavour}" arg2="ubuntu" />
+      <istrue value="${-os-is-ubuntu.flag}" />
       <then>
         <!-- <exec command="service apache2 restart" /> -->
         <exec command="a2ensite ${project.url}.conf" />
@@ -430,16 +460,13 @@
     </if>
 
     <if>
-      <equals arg1="${os.flavour}" arg2="centos" />
+      <istrue value="${-os-is-centos.flag}" />
       <then>
         <exec command="service httpd graceful" />
       </then>
     </if>
 
-
   </target>
-
-
   
   <!-- ============================================ -->
   <!-- Target: sudo test                            -->
@@ -480,34 +507,6 @@
     <taskdef name="drush" classname="DrushTask" classpath="${drush.classpath}" />
 
   </target>
-
-  <!-- ============================================ -->
-  <!-- Target: create-database-schema                      -->
-  <!-- ============================================ 
-  <target name="-create-database-schema" description="create empty db schema" hidden="true">
-
-      <pdosqlexec url="${db.driver}:host=${db.host};" encoding="utf8" userid="${db.root-user}" password="${db.root-password}" onerror="abort">
-
-
-          CREATE DATABASE IF NOT EXISTS `${db.name}`;
-      </pdosqlexec>
-
-   </target>-->
-
-  <!-- ============================================ -->
-  <!-- Target: create-database-user                 -->
-  <!-- ============================================ 
-  <target name="-create-database-user" description="create user for db schema" hidden="true">
-
-       <pdosqlexec url="${db.driver}:host=${db.host};" encoding="utf8" userid="${db.root-user}" password="${db.root-password}" onerror="abort">
-
-          GRANT ALL ON ${db.name}.* TO '${db.user}'@'${db.host}' IDENTIFIED BY '${db.password}';
-          GRANT RELOAD ON *.* TO '${db.user}'@'${db.host}';
-          FLUSH PRIVILEGES;
-
-       </pdosqlexec>
-
-  </target> -->
 
   <!-- ============================================  -->
   <!-- Target: get-security-updates                  -->
