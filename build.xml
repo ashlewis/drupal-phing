@@ -2,6 +2,9 @@
 
   <!-- ============================================  -->
   <!-- @todo: get phing drush from repo on install(see drupal phing)   -->
+  <!-- @todo: get fix permission script from repo(need to create)(see drupal phing)   -->
+  <!-- @todo: move to global location??   -->
+  <!-- @todo: swap-out ${project.root} for built in property ${project.basedir} -->
   <!-- ============================================  -->
 
 <project name="Drupal Build" default="default" basedir="./">
@@ -14,7 +17,7 @@
     <exec command="phing -f ${phing.file} -l" outputProperty="default.phing-targets" />
     <echo>Please select a target.</echo>
     <echo>${default.phing-targets}</echo>
-
+    <echo>${project.basedir}</echo>
   </target>
 
   <!-- ============================================  -->
@@ -132,7 +135,7 @@
   <!-- ============================================ -->
   <!-- Target: fix-file-permissions                 -->
   <!-- ============================================ -->
-  <target name="fix-file-permissions" description="run fix file permissions script for a secure drupal setup" depends="-init, -test-sudo">
+  <target name="fix-file-permissions" description="run fix file permissions script for a secure drupal setup" depends="-init">
       <phingcall target="-fix-file-permissions" /> 
   </target>
 
@@ -365,13 +368,13 @@
   <target name="-copy-default-global-properties" description="copy default global properties file to project root for user to edit"  hidden="true">
 
     <if>
-      <available file="${phing.dir}/../build.properties" type="file" />
+      <available file="${project.basedir}/build.properties" type="file" />
         <then>
           <echo msg="Properties file already exists..." />
         </then>
         <else>
           <echo msg="Copying properties file..." />
-          <copy file="${phing.dir}/build.properties.default" tofile="${phing.dir}/../build.properties" overwrite="false" />
+          <copy file="${phing.dir}/build.properties.default" tofile="${project.basedir}/build.properties" overwrite="false" />
         </else>
     </if>
   </target>
@@ -382,13 +385,13 @@
   <target name="-copy-default-env-properties" description="copy default environment specific properties file to project root for user to edit"  hidden="true">
 
     <if>
-      <available file="${phing.dir}/../build.env.properties" type="file" />
+      <available file="${project.basedir}/build.env.properties" type="file" />
         <then>
           <echo msg="Env properties file already exists..." />
         </then>
         <else>
           <echo msg="Copying env properties file..." />
-          <copy file="${phing.dir}/build.env.properties.default" tofile="${phing.dir}/../build.env.properties" overwrite="false" />
+          <copy file="${phing.dir}/build.env.properties.default" tofile="${project.basedir}/build.env.properties" overwrite="false" />
         </else>
     </if>
 
@@ -502,8 +505,8 @@
       Enter environment
     </input> -->
 
-    <property file="${phing.dir}/../build.properties" override="true" />
-    <property file="${phing.dir}/../build.env.properties" override="true" />
+    <property file="${project.basedir}/build.properties" override="true" />
+    <property file="${project.basedir}/build.env.properties" override="true" />
     <taskdef name="drush" classname="DrushTask" classpath="${drush.classpath}" />
 
   </target>
