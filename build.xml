@@ -3,7 +3,7 @@
   <!-- ============================================  -->
   <!-- @todo: get phing drush from repo on install(see drupal phing)   -->
   <!-- @todo: get fix permission script from repo(need to create)(see drupal phing)   -->
-  <!-- @todo: move to global location??   -->
+  <!-- @todo: apache restart permissions -->
   <!-- @todo: swap-out ${project.root} for built in property ${project.basedir} -->
   <!-- ============================================  -->
 
@@ -29,6 +29,61 @@
     <phingcall target="-copy-default-env-properties" />
 
   </target>  
+
+
+  <!-- ============================================ -->
+  <!-- Target: build-new                            -->
+  <!-- ============================================ -->
+  <target name="build-new" description="build tasks for a new local copy of an existing site" depends="-init">
+
+      <phingcall target="-get-project" />
+      <phingcall target="-add-drush-aliases" />      
+      <phingcall target="-install-drupal" />
+      <phingcall target="-add-vhost" />
+      <phingcall target="-fix-file-permissions" /> 
+
+  </target>
+
+  <!-- ============================================ -->
+  <!-- Target: build-existing                       -->
+  <!-- ============================================ -->
+  <target name="build-existing" description="build tasks for a new local copy of an existing site" depends="-init">
+      
+      <phingcall target="-get-project" />
+      <phingcall target="-add-drush-aliases" />
+      <phingcall target="-install-drupal" />
+      <phingcall target="sync-down" />
+      <phingcall target="-add-vhost" />
+      <phingcall target="-fix-file-permissions" /> 
+
+  </target>
+
+  <!-- ============================================ -->
+  <!-- Target: sudo-build                           -->
+  <!-- ============================================ -->
+  <target name="sudo-build" description="build tasks for a new local copy of an existing site that must be run as sudo (use sudo phing sudo-build)" depends="-init, -test-sudo">
+
+      <phingcall target="-add-vhost" />
+      <phingcall target="-fix-file-permissions" /> 
+      <!-- @todo: symlink ${env}.settings.php -> settings.php (need to be sudo due to drupal premissions) -->
+
+  </target>
+
+  <!-- ============================================ -->
+  <!-- Target: fix-file-permissions                 -->
+  <!-- ============================================ -->
+  <target name="fix-file-permissions" description="run fix file permissions script for a secure drupal setup" depends="-init">
+      <phingcall target="-fix-file-permissions" /> 
+  </target>
+
+  <!-- ============================================ -->
+  <!-- Target: add-drush-aliases                    -->
+  <!-- ============================================ -->
+  <target name="add-drush-aliases" description="add drush aliases for diff environments" depends="-init">
+
+      <phingcall target="-add-drush-aliases" />
+
+  </target>
 
   <!-- ============================================  -->
   <!-- Target: notify-security-updates               -->
@@ -100,53 +155,6 @@
     
   </target>
 
-  <!-- ============================================ -->
-  <!-- Target: build-new                            -->
-  <!-- ============================================ -->
-  <target name="build-new" description="build tasks for a new local copy of an existing site" depends="-init">
-
-      <phingcall target="-add-drush-aliases" />
-      <phingcall target="-install-drupal" />
-
-  </target>
-
-  <!-- ============================================ -->
-  <!-- Target: build-existing                       -->
-  <!-- ============================================ -->
-  <target name="build-existing" description="build tasks for a new local copy of an existing site" depends="-init">
-
-      <phingcall target="-add-drush-aliases" />
-      <phingcall target="-install-drupal" />
-      <phingcall target="sync-down" />
-
-  </target>
-
-  <!-- ============================================ -->
-  <!-- Target: sudo-build                           -->
-  <!-- ============================================ -->
-  <target name="sudo-build" description="build tasks for a new local copy of an existing site that must be run as sudo (use sudo phing sudo-build)" depends="-init, -test-sudo">
-
-      <phingcall target="-add-vhost" />
-      <phingcall target="-fix-file-permissions" /> 
-      <!-- @todo: symlink ${env}.settings.php -> settings.php (need to be sudo due to drupal premissions) -->
-
-  </target>
-
-  <!-- ============================================ -->
-  <!-- Target: fix-file-permissions                 -->
-  <!-- ============================================ -->
-  <target name="fix-file-permissions" description="run fix file permissions script for a secure drupal setup" depends="-init">
-      <phingcall target="-fix-file-permissions" /> 
-  </target>
-
-  <!-- ============================================ -->
-  <!-- Target: add-drush-aliases                    -->
-  <!-- ============================================ -->
-  <target name="add-drush-aliases" description="add drush aliases for diff environments" depends="-init">
-
-      <phingcall target="-add-drush-aliases" />
-
-  </target>
 
   <!-- ============================================ -->
   <!-- Target: add vhost                            -->
@@ -182,8 +190,8 @@
   
   <!-- ============================================ -->
   <!-- Target: get project                    -->
-  <!-- ============================================ 
-  <target name="get-project" description="get source code for project" depends="-init"> 
+  <!-- ============================================ -->
+  <target name="-get-project" description="get source code for project" hidden="true"> 
    
     <if>
       <not>
@@ -197,7 +205,7 @@
 
     <phingcall target="-get-develop-branch" />
 
-  </target>--> 
+  </target>
 
   <!-- ============================================ -->
   <!-- Target: install drupal                       -->
@@ -327,17 +335,17 @@
 
   <!-- ============================================ -->
   <!-- Target: clone-project                        -->
-  <!-- ============================================
+  <!-- ============================================ -->
   <target name="-clone-project" description="clone repo to temp dir to get around non-empty directory errors" hidden="true">    
   
     <echo msg="Cloning source repository..." />
     <exec command="git clone ${project.repo} build_clone-project_tmp" dir="${project.root}" passthru="true" checkreturn="true"/>
 
-  </target> --> 
+  </target> 
 
   <!-- ============================================ -->
   <!-- Target: move-project                         -->
-  <!-- ============================================ 
+  <!-- ============================================ --> 
   <target name="-move-project" description="moved cloned project into project root"  hidden="true">  
 
     <fileset dir="${project.root}/build_clone-project_tmp" id="move-project.files" defaultexcludes="false">
@@ -350,17 +358,17 @@
 
     <delete dir="${project.root}/build_clone-project_tmp" />
 
-  </target>--> 
+  </target>
 
   <!-- ============================================ -->
   <!-- Target: get-develop-branch                   -->
-  <!-- ============================================ 
+  <!-- ============================================ -->
   <target name="-get-develop-branch" description="get latest develop branch" hidden="true">  
 
     <exec command="git checkout develop" dir="${project.root}" passthru="true" checkreturn="true"/>
     <exec command="git pull origin develop" dir="${project.root}" passthru="true" checkreturn="true"/>
 
-  </target>--> 
+  </target> 
 
   <!-- ============================================  -->
   <!-- Target: copy-default-global-properties        -->
@@ -451,7 +459,7 @@
   <!-- ============================================  -->
   <!-- Target: restart webserver                     -->
   <!-- ============================================  -->
-  <target name="restart-webserver" description="restart webserver" depends="-get-os" hidden="true">     
+  <target name="-restart-webserver" description="restart webserver" depends="-get-os" hidden="true">     
 
     <if>
       <istrue value="${-os-is-ubuntu.flag}" />

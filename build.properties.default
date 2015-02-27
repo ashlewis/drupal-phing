@@ -1,7 +1,7 @@
 # GLOBAL
 # ---------------------------------------------
 project.name = phing-test
-#project.repo = https://repo.url
+project.repo = https://repo.url
 
 # email address to sent notification emails to
 notify-security-updates.email = you@example.com
@@ -22,6 +22,7 @@ os.user.staging = root
 
 # DEFAULTS may be overridden in build.env.properties
 # -------------------------------------------------
+# @todo: move into buildfile with override flag?
 
 # db details
 db.driver = mysql
