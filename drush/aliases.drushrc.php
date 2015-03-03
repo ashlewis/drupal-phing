@@ -1,13 +1,13 @@
 <?php
 
 $aliases["${env.name}"] = array (
-  'root' => '${project.root}/${drupal.dir.root}/',
+  'root' => '${project.basedir}/${drupal.dir.root}/',
   'uri' => 'http://${project.url}',
   '#name' => '${env.name}',
   'path-aliases' => array(
-    '%dump-dir' => '${project.root}/${drupal.dir.private}/drush_dump',
+    '%dump-dir' => '${project.basedir}/${drupal.dir.private}/drush_dump',
     '%files' => '${drupal.dir.files}',
-    '%private-files' => '${project.root}/${drupal.dir.private}/uploads'
+    '%private-files' => '${project.basedir}/${drupal.dir.private}/uploads'
   )
 );
 

@@ -1,10 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
   <!-- ============================================  -->
-  <!-- @todo: get phing drush from repo on install(see drupal phing)   -->
-  <!-- @todo: get fix permission script from repo(need to create)(see drupal phing)   -->
+  <!-- @todo: create generic git task (see http://reload.github.io/phing-drupal-template/#section-138)   -->
   <!-- @todo: apache restart permissions -->
-  <!-- @todo: swap-out ${project.root} for built in property ${project.basedir} -->
   <!-- ============================================  -->
 
 <project name="Drupal Build" default="default" basedir="./">
@@ -26,6 +24,7 @@
   <target name="install" description="onetime install tasks">
 
     <phingcall target="-copy-default-global-properties" />
+
     <phingcall target="-copy-default-env-properties" />
 
   </target>  
@@ -110,7 +109,7 @@
   <!-- Target: -get-sites                            -->
   <!-- ============================================  -->
   <target name="-get-sites" description="get fileset of all (multisite) sites" hidden="true">
-    <fileset dir="${project.root}/${drupal.dir.root}/sites/" excludes="all,default" id="-get-sites.directories">
+    <fileset dir="${project.basedir}/${drupal.dir.root}/sites/" excludes="all,default" id="-get-sites.directories">
       <type type="dir" />
       <depth max="0" min="0" />
     </fileset>
@@ -126,7 +125,7 @@
         <isset property="drupal.site.path" />
       </not>
       <then>
-        <property name="drupal.site.path" value="${project.root}/${drupal.dir.root}" />
+        <property name="drupal.site.path" value="${project.basedir}/${drupal.dir.root}" />
       </then>
     </if>
 
@@ -175,7 +174,7 @@
       <include name="drush/*.*" />          
     </fileset>
 
-    <copy todir="${project.root}/${drupal.dir.root}/sites/all/" overwrite="true">
+    <copy todir="${project.basedir}/${drupal.dir.root}/sites/all/" overwrite="true">
       <fileset refid="add-drush-aliases.files" />
       <filterchain>
         <expandproperties/>
@@ -184,7 +183,7 @@
     
     <!-- @todo: move this? -->
     <!-- @todo: fix permissions on private dir -->
-    <exec command="mkdir -p ${drupal.dir.private}/drush_dump" dir="${project.root}" passthru="true" checkreturn="true"/>
+    <exec command="mkdir -p ${drupal.dir.private}/drush_dump" dir="${project.basedir}" passthru="true" checkreturn="true"/>
 
   </target>
   
@@ -195,7 +194,7 @@
    
     <if>
       <not>
-        <available file="${project.root}/.git" type="dir" />        
+        <available file="${project.basedir}/.git" type="dir" />        
       </not>
       <then>
         <phingcall target="-clone-project" />
@@ -208,11 +207,29 @@
   </target>
 
   <!-- ============================================ -->
+  <!-- Target: get phing drush task                      -->
+  <!-- ============================================ -->
+  <target name="-get-phingdrushtask" description="get phing drush task from repo" hidden="true"> 
+   
+    <if>
+      <not>
+        <available file="${phing.dir}/tools/phingdrushtask/.git" type="dir" />        
+      </not>
+      <then>
+        <phingcall target="-clone-phingdrushtask" />
+      </then>
+    </if>
+
+    <phingcall target="-get-phingdrushtask-branch" />
+
+  </target>
+
+  <!-- ============================================ -->
   <!-- Target: install drupal                       -->
   <!-- ============================================ --> 
   <target name="-install-drupal" description="perform drupal install (create db and settings.php file)" hidden="true"> 
    
-    <drush command="site-install" root="${project.root}/${drupal.dir.root}" assume="yes">
+    <drush command="site-install" root="${project.basedir}/${drupal.dir.root}" assume="yes">
       <param>standard</param>
       <option name="db-url">${db.driver}://${db.user}:${db.password}@${db.host}:3306/${db.name}</option>
       <option name="site-name">"${project.name}"</option>
@@ -248,10 +265,11 @@
   </target>
 
   <!-- ============================================ -->
-  <!-- Target: fix-file-permissions                              -->
+  <!-- Target: fix-file-permissions                 -->
   <!-- ============================================ --> 
   <target name="-fix-file-permissions" description="run fix file permissions script for a secure drupal setup" hidden="true">
-    <exec command="bash /usr/local/bin/fix-permissions.sh --drupal_path=${project.root}/${drupal.dir.root} --drupal_user=${permissions.owner} --httpd_group=${permissions.group}" />
+    <echo message="bash ${phing.dir}/tools/fix-permissions.sh --drupal_path=${project.basedir}/${drupal.dir.root} --drupal_user=${permissions.owner} --httpd_group=${permissions.group}" />  
+    <exec command="bash ${phing.dir}/tools/fix-permissions.sh --drupal_path=${project.basedir}/${drupal.dir.root} --drupal_user=${permissions.owner} --httpd_group=${permissions.group}" />   
   </target>
 
 
@@ -263,8 +281,8 @@
     <!-- generate date/time variables (${DSTAMP} ${TSTAMP} ${TODAY}) -->
     <tstamp />
 
-    <drush command="sql-dump" root="${project.root}/${drupal.dir.root}" assume="yes">
-      <option name="result-file">${project.root}/${drupal.dir.private}/drush.dump.${DSTAMP}_${TSTAMP}.sql</option>
+    <drush command="sql-dump" root="${project.basedir}/${drupal.dir.root}" assume="yes">
+      <option name="result-file">${project.basedir}/${drupal.dir.private}/drush.dump.${DSTAMP}_${TSTAMP}.sql</option>
       <option name="structure-tables-key">common</option>
     </drush>
 
@@ -275,7 +293,7 @@
   <!-- ============================================ --> 
   <target name="-sync-down-db" description="synchronise local db with that from (remote) dev" hidden="true">    
   
-    <drush command="sql-sync" root="${project.root}/${drupal.dir.root}" assume="yes">
+    <drush command="sql-sync" root="${project.basedir}/${drupal.dir.root}" assume="yes">
       <param>@dev</param>
       <param>@${env.name}</param>      
       <option name="no-cache">1</option>
@@ -296,14 +314,14 @@
     <!-- @todo: move this? -->
     <if>
       <not>
-        <available file="${project.root}/${drupal.dir.root}/${drupal.dir.files}" type="dir" />        
+        <available file="${project.basedir}/${drupal.dir.root}/${drupal.dir.files}" type="dir" />        
       </not>
       <then>
-        <exec command="mkdir -p ${drupal.dir.files}" dir="${project.root}/${drupal.dir.root}" passthru="true" checkreturn="true"/>
+        <exec command="mkdir -p ${drupal.dir.files}" dir="${project.basedir}/${drupal.dir.root}" passthru="true" checkreturn="true"/>
       </then>
     </if>
 
-    <drush command="rsync" root="${project.root}/${drupal.dir.root}" assume="yes">
+    <drush command="rsync" root="${project.basedir}/${drupal.dir.root}" assume="yes">
       <param>@dev:%files</param>
       <param>@${env.name}:%files</param> 
     </drush>
@@ -315,7 +333,7 @@
   <!-- ============================================ --> 
   <target name="-clear-drupal-cache" description="clear drupal cache" hidden="true">    
   
-    <drush command="cc" root="${project.root}/${drupal.dir.root}" assume="yes">
+    <drush command="cc" root="${project.basedir}/${drupal.dir.root}" assume="yes">
       <param>all</param>
     </drush>
 
@@ -326,7 +344,7 @@
   <!-- ============================================ --> 
   <target name="-update-drupal-password" description="update drupal password to that in properties file" hidden="true">    
   
-     <drush command="upwd" root="${project.root}/${drupal.dir.root}" assume="yes">
+     <drush command="upwd" root="${project.basedir}/${drupal.dir.root}" assume="yes">
       <param>${drupal.username}</param>
       <option name="password">${drupal.password}</option>
     </drush>
@@ -339,7 +357,17 @@
   <target name="-clone-project" description="clone repo to temp dir to get around non-empty directory errors" hidden="true">    
   
     <echo msg="Cloning source repository..." />
-    <exec command="git clone ${project.repo} build_clone-project_tmp" dir="${project.root}" passthru="true" checkreturn="true"/>
+    <exec command="git clone ${project.repo} build_clone-project_tmp" dir="${project.basedir}" passthru="true" checkreturn="true"/>
+
+  </target> 
+  
+  <!-- ============================================ -->
+  <!-- Target: clone-phingdrushtask                        -->
+  <!-- ============================================ -->
+  <target name="-clone-phingdrushtask" description="clone repo to temp dir to get around non-empty directory errors" hidden="true">    
+  
+    <echo msg="Cloning source repository..." />
+    <exec command="git clone --branch ${phing.drush.branch} ${phing.drush.repo} phingdrushtask" dir="${phing.dir}/tools" passthru="true" checkreturn="true"/>
 
   </target> 
 
@@ -348,15 +376,15 @@
   <!-- ============================================ --> 
   <target name="-move-project" description="moved cloned project into project root"  hidden="true">  
 
-    <fileset dir="${project.root}/build_clone-project_tmp" id="move-project.files" defaultexcludes="false">
+    <fileset dir="${project.basedir}/build_clone-project_tmp" id="move-project.files" defaultexcludes="false">
       <include name="**/*" />   
     </fileset>
 
-    <copy todir="${project.root}" overwrite="true">
+    <copy todir="${project.basedir}" overwrite="true">
       <fileset refid="move-project.files" />
     </copy>
 
-    <delete dir="${project.root}/build_clone-project_tmp" />
+    <delete dir="${project.basedir}/build_clone-project_tmp" />
 
   </target>
 
@@ -365,10 +393,21 @@
   <!-- ============================================ -->
   <target name="-get-develop-branch" description="get latest develop branch" hidden="true">  
 
-    <exec command="git checkout develop" dir="${project.root}" passthru="true" checkreturn="true"/>
-    <exec command="git pull origin develop" dir="${project.root}" passthru="true" checkreturn="true"/>
+    <exec command="git checkout develop" dir="${project.basedir}" passthru="true" checkreturn="true"/>
+    <exec command="git pull origin develop" dir="${project.basedir}" passthru="true" checkreturn="true"/>
 
   </target> 
+
+
+  <!-- ============================================ -->
+  <!-- Target: get-phingdrushtask-branch                   -->
+  <!-- ============================================ -->
+  <target name="-get-phingdrushtask-branch" description="get latest phingdrushtask branch" hidden="true">  
+
+    <exec command="git checkout ${phing.drush.branch}" dir="${phing.dir}/tools/phingdrushtask" passthru="true" checkreturn="true"/>
+    <exec command="git pull origin ${phing.drush.branch}" dir="${phing.dir}/tools/phingdrushtask" passthru="true" checkreturn="true"/>
+
+  </target>
 
   <!-- ============================================  -->
   <!-- Target: copy-default-global-properties        -->
@@ -513,9 +552,10 @@
       Enter environment
     </input> -->
 
-    <property file="${project.basedir}/build.properties" override="true" />
+    <property file="${project.basedir}/build.properties" override="true" />    
     <property file="${project.basedir}/build.env.properties" override="true" />
-    <taskdef name="drush" classname="DrushTask" classpath="${drush.classpath}" />
+    <phingcall target="-get-phingdrushtask" />
+    <taskdef name="drush" classname="DrushTask" classpath="${phing.dir}/tools/phingdrushtask" />
 
   </target>
 

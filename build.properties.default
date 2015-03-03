@@ -1,11 +1,10 @@
 # GLOBAL
 # ---------------------------------------------
 project.name = phing-test
-project.repo = https://repo.url
+project.repo = https://git.repo.url
 
 # email address to sent notification emails to
 notify-security-updates.email = you@example.com
-
 
 # dev (NOTE this referes to a "remote" dev)
 project.root.dev = /var/www/vhosts/example.dev
@@ -22,8 +21,6 @@ os.user.staging = root
 
 # DEFAULTS may be overridden in build.env.properties
 # -------------------------------------------------
-# @todo: move into buildfile with override flag?
-
 # db details
 db.driver = mysql
 db.host = localhost
@@ -38,3 +35,8 @@ drupal.dir.files = sites/default/files
 drupal.dir.private = private
 drupal.username = admin
 drupal.password = password
+
+# Phing drush
+# -------------------------------------------------
+phing.drush.repo = http://git.drupal.org/project/phingdrushtask.git
+phing.drush.branch = 7.x-1.x
