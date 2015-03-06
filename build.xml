@@ -23,9 +23,13 @@
   <!-- ============================================  -->
   <target name="install" description="onetime install tasks">
 
+    <property file="${phing.dir}/build.properties" override="true" />
+
     <phingcall target="-copy-default-global-properties" />
 
     <phingcall target="-copy-default-env-properties" />
+
+    <phingcall target="-get-phingdrushtask" />
 
   </target>  
 
@@ -415,13 +419,13 @@
   <target name="-copy-default-global-properties" description="copy default global properties file to project root for user to edit"  hidden="true">
 
     <if>
-      <available file="${project.basedir}/build.properties" type="file" />
+      <available file="${project.basedir}/build.project.properties" type="file" />
         <then>
           <echo msg="Properties file already exists..." />
         </then>
         <else>
           <echo msg="Copying properties file..." />
-          <copy file="${phing.dir}/build.properties.default" tofile="${project.basedir}/build.properties" overwrite="false" />
+          <copy file="${phing.dir}/build.project.properties.default" tofile="${project.basedir}/build.project.properties" overwrite="false" />
         </else>
     </if>
   </target>
@@ -504,8 +508,8 @@
       <istrue value="${-os-is-ubuntu.flag}" />
       <then>
         <!-- <exec command="service apache2 restart" /> -->
-        <exec command="a2ensite ${project.url}.conf" />
-        <exec command="apache2ctl -k restart" />
+        <exec command="sudo a2ensite ${project.url}.conf" />
+        <exec command="sudo apache2ctl -k restart" />
       </then>
     </if>
 
@@ -551,10 +555,10 @@
     <!-- <input propertyname="env" validargs="dev,stage,prod">
       Enter environment
     </input> -->
-
-    <property file="${project.basedir}/build.properties" override="true" />    
-    <property file="${project.basedir}/build.env.properties" override="true" />
-    <phingcall target="-get-phingdrushtask" />
+    
+    <property file="${phing.dir}/build.properties" override="true" />
+    <property file="${project.basedir}/build.project.properties" override="true" />    
+    <property file="${project.basedir}/build.env.properties" override="true" />    
     <taskdef name="drush" classname="DrushTask" classpath="${phing.dir}/tools/phingdrushtask" />
 
   </target>

@@ -21,10 +21,6 @@ os.user.staging = root
 
 # DEFAULTS may be overridden in build.env.properties
 # -------------------------------------------------
-# db details
-db.driver = mysql
-db.host = localhost
-
 vhost.dir = /etc/httpd/vhost.d
 permissions.owner = root
 permissions.group = apache
@@ -35,8 +31,3 @@ drupal.dir.files = sites/default/files
 drupal.dir.private = private
 drupal.username = admin
 drupal.password = password
-
-# Phing drush
-# -------------------------------------------------
-phing.drush.repo = http://git.drupal.org/project/phingdrushtask.git
-phing.drush.branch = 7.x-1.x
