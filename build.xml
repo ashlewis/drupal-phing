@@ -3,6 +3,10 @@
   <!-- ============================================  -->
   <!-- @todo: create generic git task (see http://reload.github.io/phing-drupal-template/#section-138)   -->
   <!-- @todo: apache restart permissions -->
+  <!-- @todo: copy gitignore to project? -->
+  <!-- @todo: use build.project.properties from repo if available -->
+  <!-- @todo ssh-copy-id -->
+
   <!-- ============================================  -->
 
 <project name="Drupal Build" default="default" basedir="./">
@@ -25,9 +29,11 @@
 
     <property file="${phing.dir}/build.properties" override="true" />
 
-    <phingcall target="-copy-default-global-properties" />
+    <phingcall target="-add-config-files" />
 
-    <phingcall target="-copy-default-env-properties" />
+    <!-- <phingcall target="-copy-default-global-properties" />
+
+    <phingcall target="-copy-default-env-properties" /> -->
 
     <phingcall target="-get-phingdrushtask" />
 
@@ -37,7 +43,7 @@
   <!-- ============================================ -->
   <!-- Target: build-new                            -->
   <!-- ============================================ -->
-  <target name="build-new" description="build tasks for a new local copy of an existing site" depends="-init">
+  <target name="build-new" description="build tasks for a new local copy of an new site" depends="-init">
 
       <phingcall target="-get-project" />
       <phingcall target="-add-drush-aliases" />      
@@ -184,10 +190,29 @@
         <expandproperties/>
       </filterchain>
     </copy>
-    
+
+    <exec command="mv .gitignore.tpl .gitignore" dir="${project.basedir}/${drupal.dir.root}/sites/all/drush/" passthru="true" checkreturn="true"/>
+
     <!-- @todo: move this? -->
     <!-- @todo: fix permissions on private dir -->
     <exec command="mkdir -p ${drupal.dir.private}/drush_dump" dir="${project.basedir}" passthru="true" checkreturn="true"/>
+
+  </target>
+
+  <!-- ============================================ -->
+  <!-- Target: add config files                    -->
+  <!-- ============================================ --> 
+  <target name="-add-config-files" description="add build config files to project" hidden="true">    
+     
+    <fileset dir="${phing.dir}" id="add-config-files.files">
+      <include name="build_config/*.*" />          
+    </fileset>
+
+    <copy todir="${project.basedir}" overwrite="false">
+      <fileset refid="add-config-files.files" />
+    </copy>
+
+    <exec command="mv .gitignore.tpl .gitignore" dir="${project.basedir}/build_config" passthru="true" checkreturn="true"/>
 
   </target>
   
@@ -557,8 +582,8 @@
     </input> -->
     
     <property file="${phing.dir}/build.properties" override="true" />
-    <property file="${project.basedir}/build.project.properties" override="true" />    
-    <property file="${project.basedir}/build.env.properties" override="true" />    
+    <property file="${project.basedir}/build_config/build.project.properties" override="true" />    
+    <property file="${project.basedir}/build_config/build.env.properties" override="true" />    
     <taskdef name="drush" classname="DrushTask" classpath="${phing.dir}/tools/phingdrushtask" />
 
   </target>
