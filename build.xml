@@ -205,9 +205,14 @@
       <include name="build_config/*.*" />          
     </fileset>
     
-    <!-- prevent config files being overwritten because overwrite="false" only applies to files if dest is newer than source -->
-    <exec command="touch --no-create build.env.properties" dir="${project.basedir}/build_config" />
-    <exec command="touch --no-create build.project.properties" dir="${project.basedir}/build_config" />
+    <if>      
+      <available file="${project.basedir}/build_config" type="dir" />
+        <then>
+          <!-- prevent config files being overwritten because overwrite="false" only applies to files if dest is newer than source -->
+          <exec command="touch --no-create build.env.properties" dir="${project.basedir}/build_config" />
+          <exec command="touch --no-create build.project.properties" dir="${project.basedir}/build_config" />
+        </then>
+    </if>
 
     <copy todir="${project.basedir}" overwrite="false">
       <fileset refid="add-config-files.files" />
