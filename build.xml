@@ -6,6 +6,7 @@
   <!-- @todo: copy gitignore to project? -->
   <!-- @todo: use build.project.properties from repo if available -->
   <!-- @todo ssh-copy-id -->
+  <!-- @todo RENAME PROPERTIES FILES AFTER COPY DURING INSTALL -->
 
   <!-- ============================================  -->
 
@@ -30,10 +31,6 @@
     <property file="${phing.dir}/build.properties" override="true" />
 
     <phingcall target="-add-config-files" />
-
-    <!-- <phingcall target="-copy-default-global-properties" />
-
-    <phingcall target="-copy-default-env-properties" /> -->
 
     <phingcall target="-get-phingdrushtask" />
 
@@ -207,6 +204,10 @@
     <fileset dir="${phing.dir}" id="add-config-files.files">
       <include name="build_config/*.*" />          
     </fileset>
+    
+    <!-- prevent config files being overwritten because overwrite="false" only applies to files if dest is newer than source -->
+    <exec command="touch --no-create build.env.properties" dir="${project.basedir}/build_config" />
+    <exec command="touch --no-create build.project.properties" dir="${project.basedir}/build_config" />
 
     <copy todir="${project.basedir}" overwrite="false">
       <fileset refid="add-config-files.files" />
@@ -296,11 +297,10 @@
   <!-- ============================================ -->
   <!-- Target: fix-file-permissions                 -->
   <!-- ============================================ --> 
-  <target name="-fix-file-permissions" description="run fix file permissions script for a secure drupal setup" hidden="true">
-    <echo message="bash ${phing.dir}/tools/fix-permissions.sh --drupal_path=${project.basedir}/${drupal.dir.root} --drupal_user=${permissions.owner} --httpd_group=${permissions.group}" />  
-    <exec command="bash ${phing.dir}/tools/fix-permissions.sh --drupal_path=${project.basedir}/${drupal.dir.root} --drupal_user=${permissions.owner} --httpd_group=${permissions.group}" />   
-  </target>
+  <target name="-fix-file-permissions" description="run fix file permissions script for a secure drupal setup" hidden="true">   
 
+    <exec command="sudo bash ${phing.dir}/tools/fix-permissions.sh --drupal_path=${project.basedir}/${drupal.dir.root} --drupal_user=${permissions.owner} --httpd_group=${permissions.group}" dir="${project.basedir}" passthru="true" checkreturn="true"/>
+  </target>
 
   <!-- ============================================ -->
   <!-- Target: -dump-db-local                        -->
@@ -312,7 +312,7 @@
 
     <drush command="sql-dump" root="${project.basedir}/${drupal.dir.root}" assume="yes">
       <option name="result-file">${project.basedir}/${drupal.dir.private}/drush.dump.${DSTAMP}_${TSTAMP}.sql</option>
-      <option name="structure-tables-key">common</option>
+      <option name="structure-tables-key">common</option>      
     </drush>
 
   </target>
@@ -435,41 +435,6 @@
 
     <exec command="git checkout ${phing.drush.branch}" dir="${phing.dir}/tools/phingdrushtask" passthru="true" checkreturn="true"/>
     <exec command="git pull origin ${phing.drush.branch}" dir="${phing.dir}/tools/phingdrushtask" passthru="true" checkreturn="true"/>
-
-  </target>
-
-  <!-- ============================================  -->
-  <!-- Target: copy-default-global-properties        -->
-  <!-- ============================================  -->
-  <target name="-copy-default-global-properties" description="copy default global properties file to project root for user to edit"  hidden="true">
-
-    <if>
-      <available file="${project.basedir}/build.project.properties" type="file" />
-        <then>
-          <echo msg="Properties file already exists..." />
-        </then>
-        <else>
-          <echo msg="Copying properties file..." />
-          <copy file="${phing.dir}/build.project.properties.default" tofile="${project.basedir}/build.project.properties" overwrite="false" />
-        </else>
-    </if>
-  </target>
-
-  <!-- ============================================  -->
-  <!-- Target: copy-default-env-properties           -->
-  <!-- ============================================  -->
-  <target name="-copy-default-env-properties" description="copy default environment specific properties file to project root for user to edit"  hidden="true">
-
-    <if>
-      <available file="${project.basedir}/build.env.properties" type="file" />
-        <then>
-          <echo msg="Env properties file already exists..." />
-        </then>
-        <else>
-          <echo msg="Copying env properties file..." />
-          <copy file="${phing.dir}/build.env.properties.default" tofile="${project.basedir}/build.env.properties" overwrite="false" />
-        </else>
-    </if>
 
   </target>
   
