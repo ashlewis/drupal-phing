@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
   <!-- ============================================  -->
+  <!-- @todo: update makefile   -->
   <!-- @todo: create generic git task (see http://reload.github.io/phing-drupal-template/#section-138)   -->
   <!-- @todo: apache restart permissions -->
   <!-- @todo: copy gitignore to project? -->
@@ -42,8 +43,10 @@
   <!-- ============================================ -->
   <target name="build-new" description="build tasks for a new local copy of an new site" depends="-init">
 
-      <phingcall target="-get-project" />
-      <phingcall target="-add-drush-aliases" />      
+      <!-- <phingcall target="-get-project" /> -->
+       
+      <phingcall target="-drush-make" /> 
+      <phingcall target="-add-drush-aliases" /> 
       <phingcall target="-install-drupal" />
       <phingcall target="-add-vhost" />
       <phingcall target="-fix-file-permissions" /> 
@@ -80,6 +83,20 @@
   <!-- ============================================ -->
   <target name="fix-file-permissions" description="run fix file permissions script for a secure drupal setup" depends="-init">
       <phingcall target="-fix-file-permissions" /> 
+  </target>
+
+  <!-- ============================================ -->
+  <!-- Target: -drush-make                          -->
+  <!-- ============================================ -->
+  <target name="-drush-make" description="download drupal using makefile" depends="-init">
+
+      <drush command="make" root="${project.basedir}" assume="yes">
+        <param>${project.basedir}/build_config/build.make</param>
+        <param>${project.basedir}/${drupal.dir.root}</param>
+        <option name="working-copy">1</option>
+        <option name="concurrency">5</option>   
+      </drush>
+
   </target>
 
   <!-- ============================================ -->
