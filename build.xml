@@ -493,7 +493,8 @@
   <!-- ============================================  -->
   <!-- Target: os-is-centos                          -->
   <!-- ============================================  -->
-  <target name="-os-is-centos" description="check if current os is centos" hidden="true">
+  <target name="-os-is-centos" description="check if current os is centos">
+
     <if>
       <contains string="${host.os.version}" substring="centos" casesensitive="false" />
       <then>
@@ -513,9 +514,16 @@
 
   <!-- ============================================  -->
   <!-- Target: restart webserver                     -->
+  <!-- TODO: fix this: ${host.os.version} does not contain string centos so server is never restarted
   <!-- ============================================  -->
-  <target name="-restart-webserver" description="restart webserver" depends="-get-os" hidden="true">     
+  
+  <target name="restart-webserver" description="restart webserver">
+    <phingcall target="-restart-webserver" />
+  </target>
 
+
+  <target name="-restart-webserver" description="restart webserver" depends="-get-os" hidden="true">     
+    
     <if>
       <istrue value="${-os-is-ubuntu.flag}" />
       <then>
