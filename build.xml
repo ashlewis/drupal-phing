@@ -111,21 +111,20 @@
   <!-- ============================================  -->
   <!-- Target: notify-security-updates               -->
   <!-- ============================================  -->
-  <target name="notify-security-updates" description="notify admin of any available security updates" depends="-init">
+  <target name="notify-security-updates" description="notify admin of any available security updates" depends="-init, -get-sites">
     
-    <phingcall target="-get-sites" />
-
+    <!-- call for each multi-site site -->
     <if>
       <referenceexists ref="-get-sites.directories" />
       <then>
-        <foreach param="site.name" absparam="drupal.site.path" target="-notify-security-updates">
+        <foreach param="site.name" absparam="drupal.site.path" target="-notify-security-updates">          
           <fileset refid="-get-sites.directories" />
         </foreach>
       </then>
-      <else>
-        <phingcall target="-notify-security-updates" />
-      </else>
     </if>
+    
+    <!-- then call for standalone site -->
+    <phingcall target="-notify-security-updates" />
 
   </target>
 
@@ -133,7 +132,7 @@
   <!-- Target: -get-sites                            -->
   <!-- ============================================  -->
   <target name="-get-sites" description="get fileset of all (multisite) sites" hidden="true">
-    <fileset dir="${project.basedir}/${drupal.dir.root}/sites/" excludes="all,default" id="-get-sites.directories">
+    <fileset dir="${project.basedir}/${drupal.dir.root}/sites/" excludes="all,default,scripts" id="-get-sites.directories">
       <type type="dir" />
       <depth max="0" min="0" />
     </fileset>
@@ -158,11 +157,7 @@
   <!-- ============================================  -->
   <!-- Target: notify-security-updates               -->
   <!-- ============================================  -->
-  <target name="-notify-security-updates" description="notify admin of any available security updates" depends="-get-site-path" hidden="true">
-   
-    
-    <phingcall target="-get-security-updates" />
-    <phingcall target="-get-site-info" />
+  <target name="-notify-security-updates" description="notify admin of any available security updates" depends="-get-site-path, -get-site-info, -get-security-updates" hidden="true">
 
     <if>
       <istrue value="${get-security-updates.list}"/>
@@ -174,7 +169,7 @@
       </else>
     </if>
 
-    <mail tolist="${notify-security-updates.email}" from="${get-site-info.sitename}@${get-host.hostname}" subject="Drupal security updates">${get-site-info.sitename}@${host.name}${line.separator}${line.separator}${notify-security-updates.message}</mail>    
+    <mail tolist="${notify-security-updates.email}" from="${get-site-info.sitename}@${host.name}" subject="Drupal security updates">${get-site-info.sitename}@${host.name}${line.separator}${line.separator}${notify-security-updates.message}</mail>    
     
   </target>
 
@@ -608,7 +603,7 @@
     <drush command="vget" root="${drupal.site.path}" returnProperty="get-site-info.sitename">
       <option name="format">string</option>
       <param>site_name</param>
-    </drush>
+    </drush>    
     
   </target>
 
