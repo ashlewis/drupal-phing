@@ -514,7 +514,7 @@
 
   <!-- ============================================  -->
   <!-- Target: restart webserver                     -->
-  <!-- TODO: fix this: ${host.os.version} does not contain string centos so server is never restarted
+  <!-- TODO: fix this: ${host.os.version} does not contain string centos so server is never restarted -->
   <!-- ============================================  -->
   
   <target name="restart-webserver" description="restart webserver">
