@@ -7,7 +7,7 @@
   <!-- @todo: copy gitignore to project? -->
   <!-- @todo: use build.project.properties from repo if available -->
   <!-- @todo ssh-copy-id -->
-  <!-- @todo RENAME PROPERTIES FILES AFTER COPY DURING INSTALL -->
+  <!-- @todo RENAME PROPERTIES FILES AFTER COPY DURING init -->
 
   <!-- ============================================  -->
 
@@ -25,9 +25,9 @@
   </target>
 
   <!-- ============================================  -->
-  <!-- Target: install                               -->
+  <!-- Target: init                               -->
   <!-- ============================================  -->
-  <target name="install" description="onetime install tasks">
+  <target name="init" description="onetime init tasks">
 
     <property file="${phing.dir}/build.properties" override="true" />
 
@@ -41,13 +41,13 @@
   <!-- ============================================ -->
   <!-- Target: build-new                            -->
   <!-- ============================================ -->
-  <target name="build-new" description="build tasks for a new local copy of an new site" depends="-init">
+  <target name="build-new" description="build tasks for a new local copy of an new site" depends="-bootstrap">
 
       <!-- <phingcall target="-get-project" /> -->
        
       <phingcall target="-drush-make" /> 
       <phingcall target="-add-drush-aliases" /> 
-      <phingcall target="-install-drupal" />
+      <phingcall target="-init-drupal" />
       <phingcall target="-add-vhost" />
       <phingcall target="-fix-file-permissions" /> 
 
@@ -56,11 +56,11 @@
   <!-- ============================================ -->
   <!-- Target: build-existing                       -->
   <!-- ============================================ -->
-  <target name="build-existing" description="build tasks for a new local copy of an existing site" depends="-init">
+  <target name="build-existing" description="build tasks for a new local copy of an existing site" depends="-bootstrap">
       
       <phingcall target="-get-project" />
       <phingcall target="-add-drush-aliases" />
-      <phingcall target="-install-drupal" />
+      <phingcall target="-init-drupal" />
       <phingcall target="sync-down" />
       <phingcall target="-add-vhost" />
       <phingcall target="-fix-file-permissions" /> 
@@ -68,27 +68,16 @@
   </target>
 
   <!-- ============================================ -->
-  <!-- Target: sudo-build                           -->
-  <!-- ============================================ -->
-  <target name="sudo-build" description="build tasks for a new local copy of an existing site that must be run as sudo (use sudo phing sudo-build)" depends="-init, -test-sudo">
-
-      <phingcall target="-add-vhost" />
-      <phingcall target="-fix-file-permissions" /> 
-      <!-- @todo: symlink ${env}.settings.php -> settings.php (need to be sudo due to drupal premissions) -->
-
-  </target>
-
-  <!-- ============================================ -->
   <!-- Target: fix-file-permissions                 -->
   <!-- ============================================ -->
-  <target name="fix-file-permissions" description="run fix file permissions script for a secure drupal setup" depends="-init">
+  <target name="fix-file-permissions" description="run fix file permissions script for a secure drupal setup" depends="-bootstrap">
       <phingcall target="-fix-file-permissions" /> 
   </target>
 
   <!-- ============================================ -->
   <!-- Target: -drush-make                          -->
   <!-- ============================================ -->
-  <target name="-drush-make" description="download drupal using makefile" depends="-init">
+  <target name="-drush-make" description="download drupal using makefile" depends="-bootstrap">
 
       <drush command="make" root="${project.basedir}" assume="yes">
         <param>${project.basedir}/build_config/build.make</param>
@@ -102,7 +91,7 @@
   <!-- ============================================ -->
   <!-- Target: add-drush-aliases                    -->
   <!-- ============================================ -->
-  <target name="add-drush-aliases" description="add drush aliases for diff environments" depends="-init">
+  <target name="add-drush-aliases" description="add drush aliases for diff environments" depends="-bootstrap">
 
       <phingcall target="-add-drush-aliases" />
 
@@ -111,7 +100,7 @@
   <!-- ============================================  -->
   <!-- Target: notify-security-updates               -->
   <!-- ============================================  -->
-  <target name="notify-security-updates" description="notify admin of any available security updates" depends="-init, -get-sites">
+  <target name="notify-security-updates" description="notify admin of any available security updates" depends="-bootstrap, -get-sites">
     
     <!-- call for each multi-site site -->
     <if>
@@ -170,6 +159,8 @@
     </if>
 
     <mail tolist="${notify-security-updates.email}" from="${get-site-info.sitename}@${host.name}" subject="Drupal security updates">${get-site-info.sitename}@${host.name}${line.separator}${line.separator}${notify-security-updates.message}</mail>    
+
+    <echo msg="${get-site-info.sitename}@${host.name}${line.separator}${line.separator}${notify-security-updates.message}" />
     
   </target>
 
@@ -272,11 +263,11 @@
   </target>
 
   <!-- ============================================ -->
-  <!-- Target: install drupal                       -->
+  <!-- Target: init drupal                       -->
   <!-- ============================================ --> 
-  <target name="-install-drupal" description="perform drupal install (create db and settings.php file)" hidden="true"> 
+  <target name="-init-drupal" description="perform drupal init (create db and settings.php file)" hidden="true"> 
    
-    <drush command="site-install" root="${project.basedir}/${drupal.dir.root}" assume="yes">
+    <drush command="site-init" root="${project.basedir}/${drupal.dir.root}" assume="yes">
       <param>standard</param>
       <option name="db-url">${db.driver}://${db.user}:${db.password}@${db.host}:3306/${db.name}</option>
       <option name="site-name">"${project.name}"</option>
@@ -292,7 +283,7 @@
   <!-- ============================================ -->
   <!-- Target: sync-db                              -->
   <!-- ============================================ --> 
-  <target name="sync-down" description="pull latest db and files from (remote) dev to local" depends="-init">
+  <target name="sync-down" description="pull latest db and files from (remote) dev to local" depends="-bootstrap">
     
     <phingcall target="-dump-db-local" />
     
@@ -470,102 +461,32 @@
   </target>
 
   <!-- ============================================  -->
-  <!-- Target: os-is-ubuntu                          -->
-  <!-- ============================================  -->
-  <target name="-os-is-ubuntu" description="check if current os is ubuntu" hidden="true">
-    
-    <if>
-      <contains string="${host.os.version}" substring="ubuntu" casesensitive="false" />
-      <then>
-        <property name="-os-is-ubuntu.flag" value="true" />
-      </then>
-      <else>
-        <property name="-os-is-ubuntu.flag" value="false" />
-      </else>     
-    </if>
-  </target>
-
-  <!-- ============================================  -->
-  <!-- Target: os-is-centos                          -->
-  <!-- ============================================  -->
-  <target name="-os-is-centos" description="check if current os is centos">
-
-    <if>
-      <contains string="${host.os.version}" substring="centos" casesensitive="false" />
-      <then>
-        <property name="-os-is-centos.flag" value="true" />
-      </then>
-      <else>
-        <property name="-os-is-centos.flag" value="false" />
-      </else>
-    </if>
-  </target>
-
-  <!-- ============================================  -->
-  <!-- Target: get-os                                -->
-  <!-- ============================================  -->
-  <target name="-get-os" description="get current os" depends="-os-is-centos, -os-is-ubuntu" hidden="true">
-  </target>
-
-  <!-- ============================================  -->
   <!-- Target: restart webserver                     -->
-  <!-- TODO: fix this: ${host.os.version} does not contain string centos so server is never restarted -->
   <!-- ============================================  -->
   
   <target name="restart-webserver" description="restart webserver">
     <phingcall target="-restart-webserver" />
   </target>
 
-
-  <target name="-restart-webserver" description="restart webserver" depends="-get-os" hidden="true">     
+  <!-- ============================================  -->
+  <!-- Target: restart webserver                     -->
+  <!-- ============================================  -->
+  <target name="-restart-webserver" description="restart webserver" hidden="true">     
     
-    <if>
-      <istrue value="${-os-is-ubuntu.flag}" />
-      <then>
-        <!-- <exec command="service apache2 restart" /> -->
-        <exec command="sudo a2ensite ${project.url}.conf" />
-        <exec command="sudo apache2ctl -k restart" />
-      </then>
-    </if>
+    <!-- restart webserver on centos or apache -->
+    <exec command="sudo service httpd graceful || (sudo a2ensite ${project.url}.conf &amp;&amp; sudo apache2ctl -k restart)" />
+    <exec executable="echo" escape="true">
 
-    <if>
-      <istrue value="${-os-is-centos.flag}" />
-      <then>
-        <exec command="service httpd graceful" />
-      </then>
-    </if>
+      <arg value="abc$b3!SB"/>
+
+    </exec> 
 
   </target>
-  
-  <!-- ============================================ -->
-  <!-- Target: sudo test                            -->
-  <!-- ============================================ -->
-  <target name="-test-sudo" description="determine if phing is being run using root" hidden="true">
-
-    <!-- Create the currentuser property -->
-    <exec command="whoami" outputProperty="-test-sudo.current-user" />
- 
-    <!-- Set the 'issudo' property to be true if the user is root -->
-    <condition property="-test-sudo.is-sudo">
-      <equals arg1="${-test-sudo.current-user}" arg2="root" />
-    </condition>
- 
-    <!-- Fail the build if the user is not root -->
-    <if>
-      <not>
-        <equals arg1="${-test-sudo.is-sudo}" arg2="true" />
-      </not>
-      <then>
-        <fail message="You must run this build as sudo!" />
-      </then>
-    </if>
-
-  </target>  
 
   <!-- ============================================  -->
   <!-- Target: init                                  -->
   <!-- ============================================  -->
-  <target name="-init" description="initialise build properties" hidden="true">
+  <target name="-bootstrap" description="initialise build properties" hidden="true">
 
     <!-- <input propertyname="env" validargs="dev,stage,prod">
       Enter environment
@@ -584,12 +505,9 @@
   <target name="-get-security-updates" description="Check project for available Drupal security updates" hidden="true">
     
     <phingcall target="-enable-module-update" />
+  
+    <exec command="drush ups --pipe=1 --format=table --security-only=1" dir="${drupal.site.path}" outputProperty="get-security-updates.list" />
 
-    <drush command="ups" root="${drupal.site.path}" returnProperty="get-security-updates.list">
-      <option name="pipe">1</option>
-      <option name="format">table</option>
-      <option name="security-only">1</option>
-    </drush>
 
     <phingcall target="-disable-module-update" />
 
@@ -600,10 +518,8 @@
   <!-- ============================================  -->
   <target name="-get-site-info" description="Return the current drupal sitename" hidden="true">
     
-    <drush command="vget" root="${drupal.site.path}" returnProperty="get-site-info.sitename">
-      <option name="format">string</option>
-      <param>site_name</param>
-    </drush>    
+    <!-- NOTE: cannot use drush task as we cannot define site dir to run task in -->
+    <exec command="drush vget site_name --format=string" dir="${drupal.site.path}" outputProperty="get-site-info.sitename" />
     
   </target>
 
@@ -612,20 +528,18 @@
   <!-- ============================================  -->
   <target name="-enable-module-update" description="Enable update module" hidden="true">
     
-    <drush command="en" root="${drupal.site.path}" assume="yes">
-      <param>update</param>
-    </drush>
+    <!-- NOTE: cannot use drush task as we cannot define site dir to run task in -->
+    <exec command="drush -y en update" dir="${drupal.site.path}" />
     
   </target>
 
   <!-- ============================================  -->
   <!-- Target: disable-module-update                  -->
   <!-- ============================================  -->
-  <target name="-disable-module-update" description="Disable update module" hidden="true">
-    
-    <drush command="dis" root="${drupal.site.path}" assume="yes">      
-      <param>update</param>
-    </drush>
+  <target name="-disable-module-update" description="Disable update module" hidden="true">    
+ 
+    <!-- NOTE: cannot use drush task as we cannot define site dir to run task in -->
+    <exec command="drush -y dis update" dir="${drupal.site.path}" />
     
   </target>
 
