@@ -47,7 +47,7 @@
        
       <phingcall target="-drush-make" /> 
       <phingcall target="-add-drush-aliases" /> 
-      <phingcall target="-init-drupal" />
+      <phingcall target="-install-drupal" />
       <phingcall target="-add-vhost" />
       <phingcall target="-fix-file-permissions" /> 
 
@@ -60,7 +60,7 @@
       
       <phingcall target="-get-project" />
       <phingcall target="-add-drush-aliases" />
-      <phingcall target="-init-drupal" />
+      <phingcall target="-install-drupal" />
       <phingcall target="sync-down" />
       <phingcall target="-add-vhost" />
       <phingcall target="-fix-file-permissions" /> 
@@ -196,6 +196,8 @@
     <!-- @todo: move this? -->
     <!-- @todo: fix permissions on private dir -->
     <exec command="mkdir -p ${drupal.dir.private}/drush_dump" dir="${project.basedir}" passthru="true" checkreturn="true"/>
+    <exec command="sudo chown ${permissions.owner}:${permissions.group}  ${drupal.dir.private} -R" dir="${project.basedir}" passthru="true" checkreturn="true"/>
+    <exec command="sudo chmod 770  ${drupal.dir.private} -R" dir="${project.basedir}" passthru="true" checkreturn="true"/>
 
   </target>
 
@@ -241,6 +243,7 @@
     </if>
 
     <phingcall target="-get-develop-branch" />
+    <phingcall target="-ignore-git-file-mode-changes" />
 
   </target>
 
@@ -265,18 +268,25 @@
   <!-- ============================================ -->
   <!-- Target: init drupal                       -->
   <!-- ============================================ --> 
-  <target name="-init-drupal" description="perform drupal init (create db and settings.php file)" hidden="true"> 
+  <target name="-install-drupal" description="perform drupal install (create db and settings.php file)" hidden="true">
+    
+    <exec command="sudo chown ${permissions.owner}:${permissions.group} default -R" dir="${project.basedir}/${drupal.dir.root}/sites" passthru="true" checkreturn="true"/>
+    <exec command="sudo chmod 770 default -R" dir="${project.basedir}/${drupal.dir.root}/sites" passthru="true" checkreturn="true"/>
+
+    <exec command="sudo rm -f settings.php ${env.name}.settings.php" dir="${project.basedir}/${drupal.dir.root}/sites/default" passthru="true" checkreturn="true"/>
    
-    <drush command="site-init" root="${project.basedir}/${drupal.dir.root}" assume="yes">
+    <drush command="site-install" root="${project.basedir}/${drupal.dir.root}" assume="yes">
       <param>standard</param>
       <option name="db-url">${db.driver}://${db.user}:${db.password}@${db.host}:3306/${db.name}</option>
-      <option name="site-name">"${project.name}"</option>
+      <option name="site-name">${project.name}</option>
       <!--<option name="sites-subdir">"${project.name}"</option>-->
       <option name="db-su">${db.root-user}</option>
       <option name="db-su-pw">${db.root-password}</option>
       <option name="account-name">${drupal.username}</option>
       <option name="account-pass">${drupal.password}</option>      
     </drush>
+
+    <exec command="sudo mv settings.php ${env.name}.settings.php &amp;&amp; sudo ln -s ${env.name}.settings.php settings.php" dir="${project.basedir}/${drupal.dir.root}/sites/default" passthru="true" checkreturn="true"/>    
 
   </target>
   
@@ -422,6 +432,15 @@
     </copy>
 
     <delete dir="${project.basedir}/build_clone-project_tmp" />
+
+  </target>
+
+  <!-- ============================================ -->
+  <!-- Target: -ignore-git-file-mode-changes                         -->
+  <!-- ============================================ --> 
+  <target name="-ignore-git-file-mode-changes" description="configure git to ignore file mode (permission) changes"  hidden="true">  
+
+    <exec command="git config core.fileMode false" dir="${project.basedir}" passthru="true" checkreturn="true"/>
 
   </target>
 
