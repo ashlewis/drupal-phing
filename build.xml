@@ -41,26 +41,43 @@
   <!-- ============================================ -->
   <!-- Target: build-new                            -->
   <!-- ============================================ -->
-  <target name="build-new" description="build tasks for a new local copy of an new site" depends="-bootstrap">
+  <target name="build-new" description="build tasks for a new local copy of a new site" depends="-bootstrap">
 
       <!-- <phingcall target="-get-project" /> -->
        
       <phingcall target="-drush-make" /> 
       <phingcall target="-add-drush-aliases" /> 
       <phingcall target="-install-drupal" />
+      <phingcall target="-add-private-directories" />
+      <phingcall target="-add-vhost" />
+      <phingcall target="-fix-file-permissions" /> 
+
+  </target>
+  
+  <!-- ============================================ -->
+  <!-- Target: build-existing                       -->
+  <!-- ============================================ -->
+  <target name="build-build" description="build tasks for a new local copy of an existing site" depends="-bootstrap">
+      
+      <phingcall target="-get-project" />
+      <phingcall target="-add-drush-aliases" />
+      <phingcall target="-install-drupal" />
+      <phingcall target="-add-private-directories" />
+      <phingcall target="sync-down" />
       <phingcall target="-add-vhost" />
       <phingcall target="-fix-file-permissions" /> 
 
   </target>
 
+
   <!-- ============================================ -->
   <!-- Target: build-existing                       -->
   <!-- ============================================ -->
-  <target name="build-existing" description="build tasks for a new local copy of an existing site" depends="-bootstrap">
+  <target name="build-rebuild" description="build tasks for an existing local copy of an existing site" depends="-bootstrap">
       
       <phingcall target="-get-project" />
       <phingcall target="-add-drush-aliases" />
-      <phingcall target="-install-drupal" />
+      <phingcall target="-add-private-directories" />
       <phingcall target="sync-down" />
       <phingcall target="-add-vhost" />
       <phingcall target="-fix-file-permissions" /> 
@@ -192,14 +209,19 @@
     </copy>
 
     <exec command="mv .gitignore.tpl .gitignore" dir="${project.basedir}/${drupal.dir.root}/sites/all/drush/" passthru="true" checkreturn="true"/>
+   
+  </target>
+  
+  <!-- ============================================ -->
+  <!-- Target: add private directories             -->
+  <!-- ============================================ --> 
+  <target name="-add-private-directories" description="add private directories and set corrent permissions" hidden="true">  
 
-    <!-- @todo: move this? -->
-    <!-- @todo: fix permissions on private dir -->
     <exec command="mkdir -p ${drupal.dir.private}/drush_dump" dir="${project.basedir}" passthru="true" checkreturn="true"/>
     <exec command="sudo chown ${permissions.owner}:${permissions.group}  ${drupal.dir.private} -R" dir="${project.basedir}" passthru="true" checkreturn="true"/>
     <exec command="sudo chmod 770  ${drupal.dir.private} -R" dir="${project.basedir}" passthru="true" checkreturn="true"/>
 
-  </target>
+   </target>
 
   <!-- ============================================ -->
   <!-- Target: add config files                    -->
@@ -270,10 +292,10 @@
   <!-- ============================================ --> 
   <target name="-install-drupal" description="perform drupal install (create db and settings.php file)" hidden="true">
     
-    <exec command="sudo chown ${permissions.owner}:${permissions.group} default -R" dir="${project.basedir}/${drupal.dir.root}/sites" passthru="true" checkreturn="true"/>
+    <!-- <exec command="sudo chown ${permissions.owner}:${permissions.group} default -R" dir="${project.basedir}/${drupal.dir.root}/sites" passthru="true" checkreturn="true"/>
     <exec command="sudo chmod 770 default -R" dir="${project.basedir}/${drupal.dir.root}/sites" passthru="true" checkreturn="true"/>
 
-    <exec command="sudo rm -f settings.php ${env.name}.settings.php" dir="${project.basedir}/${drupal.dir.root}/sites/default" passthru="true" checkreturn="true"/>
+    <exec command="sudo rm -f settings.php ${env.name}.settings.php" dir="${project.basedir}/${drupal.dir.root}/sites/default" passthru="true" checkreturn="true"/> -->
    
     <drush command="site-install" root="${project.basedir}/${drupal.dir.root}" assume="yes">
       <param>standard</param>
