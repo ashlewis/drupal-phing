@@ -135,6 +135,21 @@
   </target>
 
   <!-- ============================================  -->
+  <!-- Target: drupal-site-audit                     -->
+  <!-- ============================================  -->
+  <target name="drupal-site-audit" description="run site audit and mail results" depends="-bootstrap">
+
+    <exec command="drush aa http://${project.url} --html --bootstrap --detail --skip=watchdog &gt; ${project.basedir}/site_audit.html" dir="${project.basedir}/${drupal.dir.root}" />
+    
+    <exec command="wkhtmltopdf site_audit.html site_audit.pdf" dir="${project.basedir}" />
+
+    <exec command="mail -a site_audit.pdf -s &quot;Site Audit: ${project.url}&quot; ${notify-security-updates.email} &lt; site_audit.html" dir="${project.basedir}" />
+
+    <!-- <echo message="mail -a site_audit.pdf -s &quot;Site Audit: ${project.url}&quot; ${notify-security-updates.email} &lt; site_audit.html" /> -->
+
+  </target>
+
+  <!-- ============================================  -->
   <!-- Target: -get-sites                            -->
   <!-- ============================================  -->
   <target name="-get-sites" description="get fileset of all (multisite) sites" hidden="true">
